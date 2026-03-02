@@ -6,35 +6,50 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, BookOpen, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const success = await login(email, password, role);
-    setLoading(false);
-    if (success) {
-      navigate(role === 'student' ? '/student' : '/faculty');
+
+    if (isSignup) {
+      const result = await signup(email, password, name, role);
+      setLoading(false);
+      if (result.success) {
+        setError('');
+        setIsSignup(false);
+        // Show success message
+        alert('Account created! Please check your email to confirm, then log in.');
+      } else {
+        setError(result.error || 'Signup failed');
+      }
     } else {
-      setError('Invalid email or password');
+      const success = await login(email, password);
+      setLoading(false);
+      if (success) {
+        // Navigation handled by auth state change
+      } else {
+        setError('Invalid email or password');
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-hero p-4">
       <div className="w-full max-w-md animate-fade-in">
-        {/* Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-4">
             <GraduationCap className="h-8 w-8 text-primary-foreground" />
@@ -64,12 +79,25 @@ const Login = () => {
                   {error}
                 </div>
               )}
+              {isSignup && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder={role === 'student' ? 'student@college.edu' : 'faculty@college.edu'}
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -84,13 +112,16 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={6}
                 />
               </div>
               <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
               </Button>
               <p className="text-xs text-center text-muted-foreground mt-3">
-                Demo: {role}@college.edu / {role}123
+                <button type="button" className="text-primary hover:underline" onClick={() => { setIsSignup(!isSignup); setError(''); }}>
+                  {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                </button>
               </p>
             </form>
           </CardContent>

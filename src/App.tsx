@@ -12,14 +12,16 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role: string }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (user?.role !== role) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
 const RootRedirect = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   if (!isAuthenticated) return <Login />;
   return <Navigate to={user?.role === 'faculty' ? '/faculty' : '/student'} replace />;
 };
