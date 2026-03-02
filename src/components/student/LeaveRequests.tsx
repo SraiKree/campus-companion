@@ -1,19 +1,23 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Calendar } from 'lucide-react';
-import type { LeaveRequest } from '@/types/erp';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
-const mockLeaves: LeaveRequest[] = [
-  { id: '1', fromDate: '2026-02-20', toDate: '2026-02-21', reason: 'Family function', status: 'approved', appliedOn: '2026-02-15' },
-  { id: '2', fromDate: '2026-02-28', toDate: '2026-02-28', reason: 'Medical appointment', status: 'pending', appliedOn: '2026-02-25' },
-  { id: '3', fromDate: '2026-01-10', toDate: '2026-01-12', reason: 'Fever and cold', status: 'rejected', appliedOn: '2026-01-08' },
-];
+interface LeaveRequest {
+  id: string;
+  from_date: string;
+  to_date: string;
+  reason: string;
+  status: string;
+  applied_on: string;
+}
 
 const statusColor: Record<string, string> = {
   pending: 'bg-warning/15 text-warning-foreground border-warning/30',
@@ -22,22 +26,47 @@ const statusColor: Record<string, string> = {
 };
 
 const LeaveRequests = () => {
-  const [leaves, setLeaves] = useState(mockLeaves);
+  const { user } = useAuth();
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ fromDate: '', toDate: '', reason: '' });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newLeave: LeaveRequest = {
-      id: Date.now().toString(),
-      ...form,
-      status: 'pending',
-      appliedOn: new Date().toISOString().split('T')[0],
-    };
-    setLeaves([newLeave, ...leaves]);
-    setForm({ fromDate: '', toDate: '', reason: '' });
-    setOpen(false);
+  const fetchLeaves = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('leave_requests')
+      .select('*')
+      .eq('student_id', user.id)
+      .order('applied_on', { ascending: false });
+    setLeaves(data || []);
+    setLoading(false);
   };
+
+  useEffect(() => { fetchLeaves(); }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSubmitting(true);
+
+    const { error } = await supabase.from('leave_requests').insert({
+      student_id: user.id,
+      from_date: form.fromDate,
+      to_date: form.toDate,
+      reason: form.reason,
+    });
+
+    setSubmitting(false);
+    if (!error) {
+      setForm({ fromDate: '', toDate: '', reason: '' });
+      setOpen(false);
+      fetchLeaves();
+    }
+  };
+
+  if (loading) return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -68,32 +97,38 @@ const LeaveRequests = () => {
                 <Label>Reason</Label>
                 <Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Enter reason for leave..." required />
               </div>
-              <Button type="submit" className="w-full gradient-primary text-primary-foreground">Submit Request</Button>
+              <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Submit Request'}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="space-y-3">
-        {leaves.map((leave) => (
-          <Card key={leave.id} className="shadow-card">
-            <CardContent className="py-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground">{leave.reason}</p>
-                  <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {leave.fromDate} → {leave.toDate}
+        {leaves.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No leave requests yet</p>
+        ) : (
+          leaves.map((leave) => (
+            <Card key={leave.id} className="shadow-card">
+              <CardContent className="py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-foreground">{leave.reason}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      {leave.from_date} → {leave.to_date}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Applied: {leave.applied_on}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Applied: {leave.appliedOn}</p>
+                  <Badge variant="outline" className={statusColor[leave.status] || ''}>
+                    {leave.status}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={statusColor[leave.status]}>
-                  {leave.status}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

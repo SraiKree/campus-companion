@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit } from 'lucide-react';
-import type { TimetableSlot } from '@/types/erp';
+import { Plus, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TIME_SLOTS = [
@@ -15,38 +16,60 @@ const TIME_SLOTS = [
   '12:30 - 1:20', '1:20 - 2:10', '2:10 - 3:00', '3:10 - 4:00',
 ];
 
-const initialSlots: TimetableSlot[] = [
-  { id: '1', day: 'Monday', startTime: '9:20', endTime: '10:10', subject: 'Data Structures', className: 'CSE-A' },
-  { id: '2', day: 'Monday', startTime: '10:10', endTime: '11:00', subject: 'Operating Systems', className: 'CSE-B' },
-  { id: '3', day: 'Tuesday', startTime: '9:20', endTime: '10:10', subject: 'Data Structures', className: 'CSE-A' },
-  { id: '4', day: 'Wednesday', startTime: '11:00', endTime: '11:50', subject: 'Database Systems', className: 'CSE-A' },
-  { id: '5', day: 'Thursday', startTime: '12:30', endTime: '1:20', subject: 'Data Structures', className: 'CSE-B' },
-  { id: '6', day: 'Friday', startTime: '2:10', endTime: '3:00', subject: 'Operating Systems', className: 'CSE-A' },
-];
+interface TimetableSlot {
+  id: string;
+  day: string;
+  start_time: string;
+  end_time: string;
+  subject: string;
+  class_name: string;
+}
 
 const TimetableManager = () => {
-  const [slots, setSlots] = useState(initialSlots);
+  const { user } = useAuth();
+  const [slots, setSlots] = useState<TimetableSlot[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ day: '', timeSlot: '', subject: '', className: '' });
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    const [startTime, endTime] = form.timeSlot.split(' - ');
-    setSlots([...slots, {
-      id: Date.now().toString(),
-      day: form.day,
-      startTime,
-      endTime,
-      subject: form.subject,
-      className: form.className,
-    }]);
-    setForm({ day: '', timeSlot: '', subject: '', className: '' });
-    setOpen(false);
+  const fetchSlots = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('timetable')
+      .select('*')
+      .eq('faculty_id', user.id)
+      .order('day');
+    setSlots(data || []);
+    setLoading(false);
   };
 
-  const handleDelete = (id: string) => {
+  useEffect(() => { fetchSlots(); }, [user]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const [startTime, endTime] = form.timeSlot.split(' - ');
+    const { error } = await supabase.from('timetable').insert({
+      faculty_id: user.id,
+      day: form.day,
+      start_time: startTime,
+      end_time: endTime,
+      subject: form.subject,
+      class_name: form.className,
+    });
+    if (!error) {
+      setForm({ day: '', timeSlot: '', subject: '', className: '' });
+      setOpen(false);
+      fetchSlots();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('timetable').delete().eq('id', id);
     setSlots(slots.filter(s => s.id !== id));
   };
+
+  if (loading) return <div className="text-center py-8 text-muted-foreground">Loading timetable...</div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -95,11 +118,10 @@ const TimetableManager = () => {
         </Dialog>
       </div>
 
-      {/* Timetable Grid */}
       <div className="overflow-x-auto">
         <div className="min-w-[700px]">
           {DAYS.map(day => {
-            const daySlots = slots.filter(s => s.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime));
+            const daySlots = slots.filter(s => s.day === day).sort((a, b) => a.start_time.localeCompare(b.start_time));
             if (daySlots.length === 0) return null;
             return (
               <div key={day} className="mb-4">
@@ -110,9 +132,9 @@ const TimetableManager = () => {
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="text-xs text-muted-foreground">{slot.startTime} - {slot.endTime}</p>
+                            <p className="text-xs text-muted-foreground">{slot.start_time} - {slot.end_time}</p>
                             <p className="text-sm font-medium text-foreground mt-0.5">{slot.subject}</p>
-                            <Badge variant="secondary" className="mt-1 text-xs">{slot.className}</Badge>
+                            <Badge variant="secondary" className="mt-1 text-xs">{slot.class_name}</Badge>
                           </div>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(slot.id)}>
                             <Trash2 className="h-3 w-3" />
@@ -125,6 +147,9 @@ const TimetableManager = () => {
               </div>
             );
           })}
+          {slots.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">No timetable slots yet. Click "Add Slot" to create one.</p>
+          )}
         </div>
       </div>
     </div>
