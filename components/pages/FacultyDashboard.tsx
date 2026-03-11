@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Users, Plus, MoreHorizontal } from 'lucide-react';
 import { useFacultyDashboard } from '@/hooks/useFacultyDashboard';
+import Link from 'next/link';
 
 const FacultyDashboard = () => {
   const { loading, stats, upcomingClasses, recentSubmissions, classPerformance, weeklyStats } = useFacultyDashboard();
@@ -26,15 +27,21 @@ const FacultyDashboard = () => {
               <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
                 Dashboard
               </Button>
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Timetable
-              </Button>
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
+              <Link href="/faculty/timetable">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Timetable
+                </Button>
+              </Link>
+              <Link href="/faculty/attendance">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Attendance
+                </Button>
+              </Link>
+              <Link href="/faculty/assignments">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Assignments
+                </Button>
+              </Link>
             </div>
           }
         />
@@ -55,15 +62,21 @@ const FacultyDashboard = () => {
             <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
               Dashboard
             </Button>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-              Timetable
-            </Button>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-              Attendance
-            </Button>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-              Assignments
-            </Button>
+            <Link href="/faculty/timetable">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Timetable
+              </Button>
+            </Link>
+            <Link href="/faculty/attendance">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Attendance
+              </Button>
+            </Link>
+            <Link href="/faculty/assignments">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Assignments
+              </Button>
+            </Link>
           </div>
         }
       />
