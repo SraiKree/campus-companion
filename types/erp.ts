@@ -61,3 +61,55 @@ export interface AssignmentSubmission {
   marks?: number;
   feedback?: string;
 }
+
+export interface Grade {
+  id: string;
+  subject: string;
+  subjectCode: string;
+  semester: number;
+  term: string;
+  marks: number;
+  totalMarks: number;
+  grade: string;
+  gradePoints: number;
+  credits: number;
+}
+
+export interface SubjectGrade {
+  subject: string;
+  subjectCode: string;
+  semester: number;
+  term: string;
+  assignments: {
+    id: string;
+    title: string;
+    marks: number;
+    totalMarks: number;
+    percentage: number;
+  }[];
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  grade: string;
+  gradePoints: number;
+  credits: number;
+}
+
+export interface SemesterGrades {
+  semester: number;
+  term: string;
+  subjects: SubjectGrade[];
+  gpa: number;
+  totalCredits: number;
+}
+
+export interface GradeStats {
+  cgpa: number;
+  totalCredits: number;
+  semesters: SemesterGrades[];
+  gradeDistribution: {
+    grade: string;
+    count: number;
+    percentage: number;
+  }[];
+}
