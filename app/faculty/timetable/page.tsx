@@ -30,6 +30,8 @@ interface ClassData {
   start_date: string;
   end_date: string | null;
   is_recurring: boolean;
+  academic_year: string;
+  semester: string;
 }
 
 const DEPARTMENTS = ['CSE', 'CSM', 'CSD', 'AERO', 'IT', 'MECH', 'EEE', 'CSIT', 'ECE', 'MBA'];
