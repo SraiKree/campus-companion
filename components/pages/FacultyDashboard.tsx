@@ -1,14 +1,35 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Users, Plus, MoreHorizontal } from 'lucide-react';
 import { useFacultyDashboard } from '@/hooks/useFacultyDashboard';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 const FacultyDashboard = () => {
-  const { loading, stats, upcomingClasses, recentSubmissions, classPerformance, weeklyStats } = useFacultyDashboard();
+  const { loading, stats, upcomingClasses, recentSubmissions, classPerformance, weeklyStats, leaveRequests, refetch } = useFacultyDashboard();
+  const [leaveFilter, setLeaveFilter] = useState<'all' | 'approved' | 'rejected'>('all');
+  const [updatingLeaveId, setUpdatingLeaveId] = useState<string | null>(null);
+
+  const filteredLeaveRequests = useMemo(() => {
+    if (leaveFilter === 'all') {
+      return leaveRequests;
+    }
+    return leaveRequests.filter((request) => request.status === leaveFilter);
+  }, [leaveFilter, leaveRequests]);
+
+  const leaveCounts = useMemo(() => {
+    return {
+      all: leaveRequests.length,
+      approved: leaveRequests.filter((request) => request.status === 'approved').length,
+      rejected: leaveRequests.filter((request) => request.status === 'rejected').length,
+    };
+  }, [leaveRequests]);
 
   const kpiData = [
     { label: 'Total Students', value: loading ? '...' : `${stats.totalStudents}`, trend: 12, isPositive: true },
@@ -17,6 +38,36 @@ const FacultyDashboard = () => {
   ];
 
   const maxClasses = Math.max(...weeklyStats.map(d => d.classes), 1);
+
+  const updateLeaveStatus = async (leaveRequestId: string, status: 'approved' | 'rejected') => {
+    setUpdatingLeaveId(leaveRequestId);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch('/api/faculty/leave-requests', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ leaveRequestId, status }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to update leave request');
+      }
+
+      toast({ title: 'Leave updated', description: `Request ${status}.` });
+      await refetch();
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      toast({ title: 'Update failed', description: (error as Error).message, variant: 'destructive' });
+    } finally {
+      setUpdatingLeaveId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -177,10 +228,14 @@ const FacultyDashboard = () => {
           {/* Recent Submissions */}
           <Card className="shadow-soft border-border rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Recent Submissions</CardTitle>
-              <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
-                See all
-              </Button>
+              <div className="flex items-center justify-between w-full gap-3">
+                <CardTitle className="text-base font-semibold">Recent Submissions</CardTitle>
+                <Link href="/faculty/assignments">
+                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
+                    See all
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {recentSubmissions.length === 0 ? (
@@ -198,6 +253,80 @@ const FacultyDashboard = () => {
                     <span className={`text-xs font-medium ${submission.score ? 'text-success' : 'text-warning'}`}>
                       {submission.score ? `${submission.score}%` : 'Review'}
                     </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft border-border rounded-2xl">
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="text-base font-semibold">Leave Requests</CardTitle>
+                <Badge variant="outline">{leaveCounts.all}</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={leaveFilter === 'all' ? 'default' : 'outline'}
+                  onClick={() => setLeaveFilter('all')}
+                >
+                  All ({leaveCounts.all})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={leaveFilter === 'approved' ? 'default' : 'outline'}
+                  onClick={() => setLeaveFilter('approved')}
+                >
+                  Approved ({leaveCounts.approved})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={leaveFilter === 'rejected' ? 'default' : 'outline'}
+                  onClick={() => setLeaveFilter('rejected')}
+                >
+                  Rejected ({leaveCounts.rejected})
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {filteredLeaveRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No leave requests for this filter.</p>
+              ) : (
+                filteredLeaveRequests.slice(0, 6).map((request) => (
+                  <div key={request.id} className="rounded-xl border p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{request.student_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {request.student_roll_no || 'No roll no'}{request.class_name ? ` • ${request.class_name}` : ''}
+                        </p>
+                      </div>
+                      <Badge variant={request.status === 'approved' ? 'default' : request.status === 'rejected' ? 'destructive' : 'secondary'}>
+                        {request.status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-foreground">{request.reason}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(request.from_date).toLocaleDateString()} to {new Date(request.to_date).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={updatingLeaveId === request.id || request.status === 'approved'}
+                        onClick={() => updateLeaveStatus(request.id, 'approved')}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={updatingLeaveId === request.id || request.status === 'rejected'}
+                        onClick={() => updateLeaveStatus(request.id, 'rejected')}
+                      >
+                        Reject
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}

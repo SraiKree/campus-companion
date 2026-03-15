@@ -150,24 +150,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Login error:', error.message, error);
       return false;
     }
-    
-    // For direct email login, try to get user data from database
-    // But don't block if it fails - just use basic session data
+
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const userData: AppUser = {
-          id: authUser.id,
-          email: authUser.email || email,
-          name: authUser.email || email,
-          role: 'faculty' as UserRole, // Default for direct login
-        };
-        storeUserData(userData);
+      if (!authUser) {
+        return true;
       }
+
+      // Determine role from metadata first, then fallback to user_roles table
+      const roleFromMetadata = (authUser.user_metadata as any)?.role;
+      let role: UserRole = 'student';
+
+      if (typeof roleFromMetadata === 'string' && (roleFromMetadata === 'student' || roleFromMetadata === 'faculty')) {
+        role = roleFromMetadata as UserRole;
+      } else {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', authUser.id)
+          .single();
+
+        if (roleData?.role === 'faculty') {
+          role = 'faculty';
+        }
+      }
+
+      const userData: AppUser = {
+        id: authUser.id,
+        email: authUser.email || email,
+        name: authUser.email || email,
+        role,
+      };
+      storeUserData(userData);
     } catch (error) {
       console.error('Error getting user data after login:', error);
     }
-    
+
     return true;
   }, []);
 

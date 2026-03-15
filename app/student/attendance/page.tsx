@@ -64,6 +64,11 @@ export default function StudentAttendancePage() {
                   Grades
                 </Button>
               </Link>
+              <Link href="/student/leave-request">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Leave Request
+                </Button>
+              </Link>
             </div>
           }
         />
@@ -106,6 +111,11 @@ export default function StudentAttendancePage() {
                   Grades
                 </Button>
               </Link>
+              <Link href="/student/leave-request">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Leave Request
+                </Button>
+              </Link>
             </div>
           }
         />
@@ -144,6 +154,11 @@ export default function StudentAttendancePage() {
             <Link href="/student/grades">
               <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                 Grades
+              </Button>
+            </Link>
+            <Link href="/student/leave-request">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Leave Request
               </Button>
             </Link>
           </div>

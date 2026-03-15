@@ -28,6 +28,15 @@ interface SubjectPerformance {
   score: number;
 }
 
+interface LeaveRequestSummary {
+  id: string;
+  reason: string;
+  from_date: string;
+  to_date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
 export const useStudentDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -40,6 +49,7 @@ export const useStudentDashboard = () => {
   const [todayClasses, setTodayClasses] = useState<TodayClass[]>([]);
   const [subjectPerformance, setSubjectPerformance] = useState<SubjectPerformance[]>([]);
   const [weeklyAttendance, setWeeklyAttendance] = useState<{ day: string; present: number; total: number }[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequestSummary[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +76,7 @@ export const useStudentDashboard = () => {
         Promise.all([
           fetchAttendanceStats(),
           fetchAssignments(),
+          fetchLeaveRequests(),
           fetchTodayClasses(),
           fetchSubjectPerformance(),
           fetchWeeklyAttendance(),
@@ -175,6 +186,26 @@ export const useStudentDashboard = () => {
     }
   };
 
+  const fetchLeaveRequests = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch('/api/student/leave-requests', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      setLeaveRequests(Array.isArray(data?.leaveRequests) ? data.leaveRequests : []);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    }
+  };
+
   const fetchTodayClasses = async () => {
     // For now, return empty array since we don't have student timetable integration
     // This can be implemented later when student-faculty class relationships are established
@@ -253,6 +284,7 @@ export const useStudentDashboard = () => {
     todayClasses,
     subjectPerformance,
     weeklyAttendance,
+    leaveRequests,
     refetch: fetchDashboardData,
   };
 };

@@ -3,12 +3,15 @@
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, FileText, Clock, Plus } from 'lucide-react';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import Link from 'next/link';
 
 const StudentDashboard = () => {
-  const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance } = useStudentDashboard();
+  const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests } = useStudentDashboard();
+  const latestLeaveRequest = leaveRequests[0];
+  const pendingLeaveCount = leaveRequests.filter((request) => request.status === 'pending').length;
 
   const kpiData = [
     { 
@@ -28,6 +31,12 @@ const StudentDashboard = () => {
       value: loading ? '...' : `${assignments.filter(a => a.status === 'pending').length}`, 
       trend: 2, 
       isPositive: false 
+    },
+    {
+      label: 'Pending Leaves',
+      value: loading ? '...' : `${pendingLeaveCount}`,
+      trend: pendingLeaveCount > 0 ? pendingLeaveCount : 0,
+      isPositive: pendingLeaveCount === 0
     },
   ];
 
@@ -55,6 +64,11 @@ const StudentDashboard = () => {
               <Link href="/student/grades">
                 <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                   Grades
+                </Button>
+              </Link>
+              <Link href="/student/leave-request">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Leave Request
                 </Button>
               </Link>
             </div>
@@ -92,6 +106,11 @@ const StudentDashboard = () => {
                 Grades
               </Button>
             </Link>
+            <Link href="/student/leave-request">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Leave Request
+              </Button>
+            </Link>
           </div>
         }
       />
@@ -102,7 +121,7 @@ const StudentDashboard = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {kpiData.map((kpi, idx) => (
             <Card key={idx} className="shadow-soft border-border rounded-2xl">
               <CardContent className="p-6">
@@ -176,10 +195,14 @@ const StudentDashboard = () => {
           {/* Recent Assignments */}
           <Card className="shadow-soft border-border rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Recent Assignments</CardTitle>
-              <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
-                See all
-              </Button>
+              <div className="flex items-center justify-between w-full gap-3">
+                <CardTitle className="text-base font-semibold">Recent Assignments</CardTitle>
+                <Link href="/student/assignments">
+                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
+                    See all
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {assignments.length === 0 ? (
@@ -199,6 +222,44 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                 ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft border-border rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div className="flex items-center justify-between w-full gap-3">
+                <CardTitle className="text-base font-semibold">Leave Status</CardTitle>
+                <Link href="/student/leave-request">
+                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
+                    Apply
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {latestLeaveRequest ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-foreground truncate">{latestLeaveRequest.reason}</p>
+                    <Badge variant={latestLeaveRequest.status === 'approved' ? 'default' : latestLeaveRequest.status === 'rejected' ? 'destructive' : 'secondary'}>
+                      {latestLeaveRequest.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(latestLeaveRequest.from_date).toLocaleDateString()} to {new Date(latestLeaveRequest.to_date).toLocaleDateString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {pendingLeaveCount} pending request{pendingLeaveCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">No leave requests submitted yet.</p>
+                  <Link href="/student/leave-request">
+                    <Button size="sm">Request Leave</Button>
+                  </Link>
+                </div>
               )}
             </CardContent>
           </Card>

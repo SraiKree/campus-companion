@@ -30,6 +30,19 @@ interface ClassPerformance {
   avgScore: number;
 }
 
+interface LeaveRequest {
+  id: string;
+  student_id: string;
+  student_name: string;
+  student_roll_no?: string | null;
+  class_name?: string | null;
+  reason: string;
+  from_date: string;
+  to_date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
 export const useFacultyDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -42,6 +55,7 @@ export const useFacultyDashboard = () => {
   const [recentSubmissions, setRecentSubmissions] = useState<RecentSubmission[]>([]);
   const [classPerformance, setClassPerformance] = useState<ClassPerformance[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<{ day: string; classes: number }[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +71,7 @@ export const useFacultyDashboard = () => {
         fetchStats(),
         fetchUpcomingClasses(),
         fetchRecentSubmissions(),
+        fetchLeaveRequests(),
         fetchClassPerformance(),
         fetchWeeklyStats(),
       ]);
@@ -64,6 +79,26 @@ export const useFacultyDashboard = () => {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch('/api/faculty/leave-requests', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      setLeaveRequests(Array.isArray(data?.leaveRequests) ? data.leaveRequests : []);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
     }
   };
 
@@ -258,6 +293,7 @@ export const useFacultyDashboard = () => {
     recentSubmissions,
     classPerformance,
     weeklyStats,
+    leaveRequests,
     refetch: fetchDashboardData,
   };
 };
