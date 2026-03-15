@@ -37,6 +37,11 @@ const FacultyDashboard = () => {
                   Attendance
                 </Button>
               </Link>
+              <Link href="/faculty/grades">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Grades
+                </Button>
+              </Link>
               <Link href="/faculty/assignments">
                 <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                   Assignments
@@ -70,6 +75,11 @@ const FacultyDashboard = () => {
             <Link href="/faculty/attendance">
               <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                 Attendance
+              </Button>
+            </Link>
+            <Link href="/faculty/grades">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Grades
               </Button>
             </Link>
             <Link href="/faculty/assignments">

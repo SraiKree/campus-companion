@@ -5,6 +5,9 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  roll_no?: string; // For students
+  class_name?: string; // For students
+  department?: string; // For both students and faculty
 }
 
 export interface AttendanceRecord {

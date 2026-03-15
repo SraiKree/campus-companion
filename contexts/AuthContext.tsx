@@ -7,6 +7,7 @@ import type { User as AppUser, UserRole } from '@/types/erp';
 interface AuthContextType {
   user: AppUser | null;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithRollNumber: (rollNumber: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -19,62 +20,155 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = useCallback(async (userId: string, email: string) => {
-    // Get profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('name')
-      .eq('id', userId)
-      .single();
-
-    // Get role
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-
-    if (roleData) {
-      setUser({
-        id: userId,
-        name: profile?.name || email,
-        email,
-        role: roleData.role as UserRole,
-      });
+  // Store user data in sessionStorage to avoid repeated DB calls
+  const storeUserData = (userData: AppUser) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('userData', JSON.stringify(userData));
     }
-  }, []);
+    setUser(userData);
+  };
+
+  const getUserFromStorage = (): AppUser | null => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('userData');
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
+  };
+
+  const clearUserData = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('userData');
+    }
+    setUser(null);
+  };
 
   useEffect(() => {
-    // Listen for auth changes FIRST
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Use setTimeout to avoid Supabase deadlock
-        setTimeout(() => {
-          fetchUserProfile(session.user.id, session.user.email || '');
-        }, 0);
+        // Check if we have user data in storage first
+        const storedUser = getUserFromStorage();
+        if (storedUser && storedUser.id === session.user.id) {
+          setUser(storedUser);
+          setLoading(false);
+          return;
+        }
+
+        // If no stored data, we need to fetch from login API response
+        // For now, create a basic user object from session
+        const basicUser: AppUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.email || '',
+          role: 'faculty' as UserRole, // Default, will be updated by login API
+        };
+        storeUserData(basicUser);
       } else {
-        setUser(null);
+        clearUserData();
       }
       setLoading(false);
     });
 
-    // Then check existing session
+    // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        fetchUserProfile(session.user.id, session.user.email || '');
+        const storedUser = getUserFromStorage();
+        if (storedUser && storedUser.id === session.user.id) {
+          setUser(storedUser);
+        } else {
+          // Create basic user from session
+          const basicUser: AppUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.email || '',
+            role: 'faculty' as UserRole,
+          };
+          storeUserData(basicUser);
+        }
+      } else {
+        clearUserData();
       }
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Error checking existing session:', error);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [fetchUserProfile]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const loginWithRollNumber = useCallback(async (rollNumber: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rollNumber, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Login failed' };
+      }
+
+      // Use credentials to sign in with Supabase
+      if (data.credentials) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.credentials.email,
+          password: data.credentials.password
+        });
+
+        if (signInError) {
+          console.error('Supabase sign in error:', signInError);
+          return { success: false, error: 'Failed to establish session' };
+        }
+        
+        // Store complete user data from login response
+        if (data.user) {
+          storeUserData(data.user);
+        }
+      } else {
+        console.error('No credentials received from login API');
+        return { success: false, error: 'No authentication credentials received' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.error('Login error:', error.message, error);
+      return false;
     }
-    return !error;
+    
+    // For direct email login, try to get user data from database
+    // But don't block if it fails - just use basic session data
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const userData: AppUser = {
+          id: authUser.id,
+          email: authUser.email || email,
+          name: authUser.email || email,
+          role: 'faculty' as UserRole, // Default for direct login
+        };
+        storeUserData(userData);
+      }
+    } catch (error) {
+      console.error('Error getting user data after login:', error);
+    }
+    
+    return true;
   }, []);
 
   const signup = useCallback(async (email: string, password: string, name: string, role: UserRole) => {
@@ -91,12 +185,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(async () => {
+    // Log logout activity if user exists
+    if (user?.id) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id })
+        });
+      } catch (error) {
+        console.error('Logout tracking error:', error);
+      }
+    }
+
+    // Clear stored data and sign out
+    clearUserData();
     await supabase.auth.signOut();
-    setUser(null);
-  }, []);
+    
+    // Redirect to home page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, login, loginWithRollNumber, signup, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

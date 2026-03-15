@@ -12,13 +12,14 @@ import { GraduationCap, BookOpen, AlertCircle, User } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, loginWithRollNumber, signup } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,13 +38,25 @@ const Login = () => {
         setError(result.error || 'Signup failed');
       }
     } else {
-      const success = await login(email, password);
-      setLoading(false);
-      if (success) {
-        // Navigation will be handled by the page component
+      let success = false;
+      
+      if (role === 'student') {
+        // Use roll number login for students
+        const result = await loginWithRollNumber(rollNumber, password);
+        success = result.success;
+        if (!success) {
+          setError(result.error || 'Invalid roll number or password');
+        }
       } else {
-        setError('Invalid email or password. Please check your credentials and try again.');
+        // Use email login for faculty
+        success = await login(email, password);
+        if (!success) {
+          setError('Invalid email or password. Please check your credentials and try again.');
+        }
       }
+      
+      setLoading(false);
+      // Navigation will be handled by the page component
     }
   };
 
@@ -102,29 +115,52 @@ const Login = () => {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="rounded-lg"
-                />
+                <Label htmlFor={role === 'student' ? 'rollNumber' : 'email'}>
+                  {role === 'student' ? 'Roll Number' : 'Email'}
+                </Label>
+                {role === 'student' ? (
+                  <Input
+                    id="rollNumber"
+                    type="text"
+                    placeholder="Enter your roll number (e.g., 23R21A1285)"
+                    value={rollNumber}
+                    onChange={(e) => {
+                      setRollNumber(e.target.value);
+                      // Auto-fill password with roll number for students
+                      setPassword(e.target.value);
+                    }}
+                    required
+                    className="rounded-lg"
+                  />
+                ) : (
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="rounded-lg"
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder={role === 'student' ? 'Enter your roll number as password' : 'Enter your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
                   className="rounded-lg"
                 />
+                {role === 'student' && !isSignup && (
+                  <p className="text-xs text-muted-foreground">
+                    Use your roll number as both username and password
+                  </p>
+                )}
               </div>
               <Button type="submit" className="w-full bg-[#141414] text-white hover:bg-[#141414]/90 rounded-lg" disabled={loading}>
                 {loading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}

@@ -42,21 +42,35 @@ export const useStudentDashboard = () => {
   const [weeklyAttendance, setWeeklyAttendance] = useState<{ day: string; present: number; total: number }[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     fetchDashboardData();
-  }, [user]);
+  }, [user?.id]); // Only depend on user ID to prevent infinite loops
 
   const fetchDashboardData = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {
-      await Promise.all([
-        fetchAttendanceStats(),
-        fetchAssignments(),
-        fetchTodayClasses(),
-        fetchSubjectPerformance(),
-        fetchWeeklyAttendance(),
+      // Set a timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Dashboard data fetch timeout')), 10000)
+      );
+      
+      await Promise.race([
+        Promise.all([
+          fetchAttendanceStats(),
+          fetchAssignments(),
+          fetchTodayClasses(),
+          fetchSubjectPerformance(),
+          fetchWeeklyAttendance(),
+        ]),
+        timeoutPromise
       ]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -66,21 +80,58 @@ export const useStudentDashboard = () => {
   };
 
   const fetchAttendanceStats = async () => {
-    const { data, error } = await supabase
-      .from('attendance')
-      .select('present')
-      .eq('student_id', user!.id);
+    if (!user?.roll_no) return;
 
-    if (!error && data) {
-      const totalClasses = data.length;
-      const presentClasses = data.filter(a => a.present).length;
-      const attendanceRate = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0;
+    try {
+      const response = await fetch(`/api/student/attendance?rollNumber=${encodeURIComponent(user.roll_no)}`);
       
-      setAttendanceStats({
-        totalClasses,
-        presentClasses,
-        attendanceRate: Math.round(attendanceRate * 10) / 10,
-      });
+      if (response.ok) {
+        const data = await response.json();
+        const stats = data.overall_stats;
+        
+        setAttendanceStats({
+          totalClasses: stats.total_classes,
+          presentClasses: stats.classes_attended,
+          attendanceRate: stats.attendance_percentage,
+        });
+      } else {
+        // Fallback to old method if new API fails
+        const { data, error } = await supabase
+          .from('attendance')
+          .select('present')
+          .eq('student_id', user!.id);
+
+        if (!error && data) {
+          const totalClasses = data.length;
+          const presentClasses = data.filter(a => a.present).length;
+          const attendanceRate = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0;
+          
+          setAttendanceStats({
+            totalClasses,
+            presentClasses,
+            attendanceRate: Math.round(attendanceRate * 10) / 10,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching attendance stats:', error);
+      // Fallback to old method
+      const { data, error: supabaseError } = await supabase
+        .from('attendance')
+        .select('present')
+        .eq('student_id', user!.id);
+
+      if (!supabaseError && data) {
+        const totalClasses = data.length;
+        const presentClasses = data.filter(a => a.present).length;
+        const attendanceRate = totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0;
+        
+        setAttendanceStats({
+          totalClasses,
+          presentClasses,
+          attendanceRate: Math.round(attendanceRate * 10) / 10,
+        });
+      }
     }
   };
 
@@ -125,31 +176,9 @@ export const useStudentDashboard = () => {
   };
 
   const fetchTodayClasses = async () => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('class_name')
-      .eq('id', user!.id)
-      .single();
-
-    if (!profile?.class_name) return;
-
-    const { data } = await supabase
-      .from('timetable')
-      .select('start_time, subject, class_name')
-      .eq('class_name', profile.class_name)
-      .eq('day', today)
-      .order('start_time');
-
-    if (data) {
-      const classes: TodayClass[] = data.map((c, idx) => ({
-        time: c.start_time,
-        subject: c.subject,
-        room: `Room ${101 + idx}`,
-      }));
-      setTodayClasses(classes);
-    }
+    // For now, return empty array since we don't have student timetable integration
+    // This can be implemented later when student-faculty class relationships are established
+    setTodayClasses([]);
   };
 
   const fetchSubjectPerformance = async () => {
