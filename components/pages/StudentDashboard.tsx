@@ -4,14 +4,15 @@ import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, FileText, Clock, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, FileText, Clock, Plus, Megaphone, ExternalLink } from 'lucide-react';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import Link from 'next/link';
 
 const StudentDashboard = () => {
-  const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests } = useStudentDashboard();
+  const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests, announcements } = useStudentDashboard();
   const latestLeaveRequest = leaveRequests[0];
   const pendingLeaveCount = leaveRequests.filter((request) => request.status === 'pending').length;
+  const latestAnnouncements = announcements.slice(0, 3);
 
   const kpiData = [
     { 
@@ -71,6 +72,11 @@ const StudentDashboard = () => {
                   Leave Request
                 </Button>
               </Link>
+              <Link href="/student/announcements">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Announcements
+                </Button>
+              </Link>
             </div>
           }
         />
@@ -109,6 +115,11 @@ const StudentDashboard = () => {
             <Link href="/student/leave-request">
               <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                 Leave Request
+              </Button>
+            </Link>
+            <Link href="/student/announcements">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Announcements
               </Button>
             </Link>
           </div>
@@ -220,6 +231,46 @@ const StudentDashboard = () => {
                     <span className={`text-xs font-medium ${assignment.status === 'submitted' ? 'text-success' : 'text-warning'}`}>
                       {assignment.status === 'submitted' ? (assignment.marks ? `${assignment.marks}%` : '✓') : assignment.deadline}
                     </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-soft border-border rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div className="flex items-center justify-between w-full gap-3">
+                <CardTitle className="text-base font-semibold">Latest Announcements</CardTitle>
+                <Link href="/student/announcements">
+                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
+                    See all
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {latestAnnouncements.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No announcements yet</p>
+              ) : (
+                latestAnnouncements.map((announcement) => (
+                  <div key={announcement.id} className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      <Megaphone className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-medium text-foreground truncate">{announcement.subject}</p>
+                        <Badge variant="outline">{announcement.club_name}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {announcement.description || 'New event announcement posted by faculty.'}
+                      </p>
+                    </div>
+                    {announcement.link ? (
+                      <a href={announcement.link} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    ) : null}
                   </div>
                 ))
               )}

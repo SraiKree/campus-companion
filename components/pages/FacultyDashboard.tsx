@@ -98,6 +98,11 @@ const FacultyDashboard = () => {
                   Assignments
                 </Button>
               </Link>
+              <Link href="/faculty/announcements">
+                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                  Announcements
+                </Button>
+              </Link>
             </div>
           }
         />
@@ -136,6 +141,11 @@ const FacultyDashboard = () => {
             <Link href="/faculty/assignments">
               <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
                 Assignments
+              </Button>
+            </Link>
+            <Link href="/faculty/announcements">
+              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
+                Announcements
               </Button>
             </Link>
           </div>

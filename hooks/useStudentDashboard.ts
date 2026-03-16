@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import type { AnnouncementRecord } from '@/lib/announcements';
 
 interface AttendanceStats {
   totalClasses: number;
@@ -50,6 +51,7 @@ export const useStudentDashboard = () => {
   const [subjectPerformance, setSubjectPerformance] = useState<SubjectPerformance[]>([]);
   const [weeklyAttendance, setWeeklyAttendance] = useState<{ day: string; present: number; total: number }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestSummary[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -77,6 +79,7 @@ export const useStudentDashboard = () => {
           fetchAttendanceStats(),
           fetchAssignments(),
           fetchLeaveRequests(),
+          fetchAnnouncements(),
           fetchTodayClasses(),
           fetchSubjectPerformance(),
           fetchWeeklyAttendance(),
@@ -206,6 +209,26 @@ export const useStudentDashboard = () => {
     }
   };
 
+  const fetchAnnouncements = async () => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const response = await fetch('/api/student/announcements', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      setAnnouncements(Array.isArray(data?.announcements) ? data.announcements : []);
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+    }
+  };
+
   const fetchTodayClasses = async () => {
     // For now, return empty array since we don't have student timetable integration
     // This can be implemented later when student-faculty class relationships are established
@@ -285,6 +308,7 @@ export const useStudentDashboard = () => {
     subjectPerformance,
     weeklyAttendance,
     leaveRequests,
+    announcements,
     refetch: fetchDashboardData,
   };
 };
