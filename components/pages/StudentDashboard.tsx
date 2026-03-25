@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,12 +42,34 @@ const DEFAULT_LAYOUT: Widget[] = [
   { id: 'widget-4', type: 'campus-feed', gridArea: '12' },
 ];
 
+const STORAGE_KEY = 'student-dashboard-layout';
+
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests, announcements } = useStudentDashboard();
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_LAYOUT);
   const [isWidgetMenuOpen, setIsWidgetMenuOpen] = useState(false);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+
+  // Load layout from localStorage on mount
+  useEffect(() => {
+    const savedLayout = localStorage.getItem(STORAGE_KEY);
+    if (savedLayout) {
+      try {
+        const parsed = JSON.parse(savedLayout);
+        setWidgets(parsed);
+      } catch (error) {
+        console.error('Failed to parse saved layout:', error);
+      }
+    }
+  }, []);
+
+  // Save layout to localStorage whenever it changes
+  useEffect(() => {
+    if (widgets.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
+    }
+  }, [widgets]);
 
   const latestLeaveRequest = leaveRequests[0];
   const pendingLeaveCount = leaveRequests.filter((request) => request.status === 'pending').length;
@@ -84,6 +106,13 @@ const StudentDashboard = () => {
   ];
 
   const handleAddWidget = (widgetId: string, widgetType: WidgetType) => {
+    // Check if widget type already exists
+    const widgetExists = widgets.some(w => w.type === widgetType && w.id !== widgetId);
+    if (widgetExists) {
+      alert(`The ${widgetType.replace(/-/g, ' ')} widget is already on your dashboard. Remove it first to add it elsewhere.`);
+      return;
+    }
+
     setWidgets(widgets.map(w => 
       w.id === widgetId ? { ...w, type: widgetType } : w
     ));
@@ -96,6 +125,32 @@ const StudentDashboard = () => {
       w.id === widgetId ? { ...w, type: 'empty' } : w
     ));
   };
+
+  const resetLayout = () => {
+    if (confirm('Are you sure you want to reset your dashboard to the default layout?')) {
+      setWidgets(DEFAULT_LAYOUT);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
+  const exportLayout = () => {
+    const layoutJson = JSON.stringify(widgets, null, 2);
+    const blob = new Blob([layoutJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dashboard-layout.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Get list of widget types that are already in use
+  const usedWidgetTypes = new Set(widgets.filter(w => w.type !== 'empty').map(w => w.type));
+  
+  // Filter available widgets to show only those not already in use
+  const availableWidgetsToAdd = AVAILABLE_WIDGETS.filter(
+    widget => !usedWidgetTypes.has(widget.type as WidgetType)
+  );
 
   const openWidgetMenu = (widgetId: string) => {
     setSelectedWidgetId(widgetId);
@@ -389,6 +444,22 @@ const StudentDashboard = () => {
   return (
     <StudentLayout>
       <div className="relative">
+        {/* Dashboard Controls */}
+        <div className="flex justify-end gap-2 mb-4">
+          <button
+            onClick={exportLayout}
+            className="px-3 py-1.5 text-xs font-medium text-[#666] hover:text-[#1a1a1a] border border-[#e5e5e5] rounded-lg hover:border-[#e05252] transition-colors"
+          >
+            Export Layout
+          </button>
+          <button
+            onClick={resetLayout}
+            className="px-3 py-1.5 text-xs font-medium text-[#666] hover:text-[#e05252] border border-[#e5e5e5] rounded-lg hover:border-[#e05252] transition-colors"
+          >
+            Reset to Default
+          </button>
+        </div>
+
         <div className="grid grid-cols-12 gap-6">
           {/* Hero Bento: Digital ID - Fixed, not customizable */}
           <div className="col-span-8 bg-white rounded-2xl p-8 flex gap-8 relative overflow-hidden">
@@ -469,23 +540,41 @@ const StudentDashboard = () => {
           </div>
 
           <div className="p-6 space-y-3 overflow-y-auto h-[calc(100%-88px)]">
-            {AVAILABLE_WIDGETS.map((widget) => (
-              <button
-                key={widget.type}
-                onClick={() => selectedWidgetId && handleAddWidget(selectedWidgetId, widget.type as WidgetType)}
-                className="w-full text-left p-4 border-2 border-[#e5e5e5] rounded-xl hover:border-[#e05252] hover:bg-[#e05252]/5 transition-all group"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-[#f2f0ed] rounded-lg flex items-center justify-center group-hover:bg-[#e05252]/10 transition-colors flex-shrink-0">
-                    <GripVertical className="w-5 h-5 text-[#666] group-hover:text-[#e05252]" />
+            {availableWidgetsToAdd.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#666] mb-2">All widgets are already on your dashboard!</p>
+                <p className="text-sm text-[#666]">Remove a widget to add it to a different position.</p>
+              </div>
+            ) : (
+              availableWidgetsToAdd.map((widget) => (
+                <button
+                  key={widget.type}
+                  onClick={() => selectedWidgetId && handleAddWidget(selectedWidgetId, widget.type as WidgetType)}
+                  className="w-full text-left p-4 border-2 border-[#e5e5e5] rounded-xl hover:border-[#e05252] hover:bg-[#e05252]/5 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-[#f2f0ed] rounded-lg flex items-center justify-center group-hover:bg-[#e05252]/10 transition-colors flex-shrink-0">
+                      <GripVertical className="w-5 h-5 text-[#666] group-hover:text-[#e05252]" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-[#1a1a1a] mb-1">{widget.name}</h3>
+                      <p className="text-sm text-[#666]">{widget.description}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-[#1a1a1a] mb-1">{widget.name}</h3>
-                    <p className="text-sm text-[#666]">{widget.description}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
+            
+            {/* Layout Info */}
+            <div className="mt-6 p-4 bg-[#f2f0ed] rounded-xl">
+              <h4 className="text-xs font-bold text-[#1a1a1a] uppercase tracking-wider mb-2">
+                Current Layout
+              </h4>
+              <div className="space-y-1 text-xs text-[#666]">
+                <p>Active Widgets: {widgets.filter(w => w.type !== 'empty').length}</p>
+                <p>Empty Slots: {widgets.filter(w => w.type === 'empty').length}</p>
+              </div>
+            </div>
           </div>
         </div>
 
