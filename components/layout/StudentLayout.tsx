@@ -79,11 +79,11 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
             <Avatar className="w-10 h-10">
               <AvatarImage src="/placeholder-avatar.png" />
               <AvatarFallback className="bg-[#e05252] text-white">
-                {user?.full_name?.charAt(0) || 'A'}
+                {user?.name?.charAt(0) || 'A'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold text-[#1a1a1a] truncate">{user?.full_name || 'Student'}</p>
+              <p className="text-sm font-bold text-[#1a1a1a] truncate">{user?.name || 'Student'}</p>
               <p className="text-xs text-[#666]">ID: #{user?.id || '000000'}</p>
             </div>
           </div>
@@ -121,11 +121,11 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="/placeholder-avatar.png" />
                   <AvatarFallback className="bg-[#e05252] text-white text-xs">
-                    {user?.full_name?.charAt(0) || 'A'}
+                    {user?.name?.charAt(0) || 'A'}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-xs font-bold text-[#1a1a1a]">
-                  {user?.full_name?.split(' ')[0]?.toUpperCase() || 'STUDENT'}
+                  {user?.name?.split(' ')[0]?.toUpperCase() || 'STUDENT'}
                 </span>
               </Button>
             </div>
