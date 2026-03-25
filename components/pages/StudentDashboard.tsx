@@ -1,374 +1,239 @@
 'use client';
 
-import DashboardHeader from '@/components/layout/DashboardHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, FileText, Clock, Plus, Megaphone, ExternalLink } from 'lucide-react';
+import { 
+  MapPin, Clock, CreditCard, FileText, 
+  Heart, UserCircle, DollarSign
+} from 'lucide-react';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
-import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 const StudentDashboard = () => {
+  const { user } = useAuth();
   const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests, announcements } = useStudentDashboard();
   const latestLeaveRequest = leaveRequests[0];
   const pendingLeaveCount = leaveRequests.filter((request) => request.status === 'pending').length;
   const latestAnnouncements = announcements.slice(0, 3);
 
-  const kpiData = [
-    { 
-      label: 'Attendance Rate', 
-      value: loading ? '...' : `${attendanceStats.attendanceRate}%`, 
-      trend: 3.2, 
-      isPositive: true 
-    },
-    { 
-      label: 'Total Classes', 
-      value: loading ? '...' : `${attendanceStats.totalClasses}`, 
-      trend: 0.8, 
-      isPositive: true 
-    },
-    { 
-      label: 'Pending Tasks', 
-      value: loading ? '...' : `${assignments.filter(a => a.status === 'pending').length}`, 
-      trend: 2, 
-      isPositive: false 
-    },
-    {
-      label: 'Pending Leaves',
-      value: loading ? '...' : `${pendingLeaveCount}`,
-      trend: pendingLeaveCount > 0 ? pendingLeaveCount : 0,
-      isPositive: pendingLeaveCount === 0
-    },
-  ];
+  // Calculate CGPA trend data
+  const cgpaData = [3.4, 3.6, 3.8, 3.7, 3.9];
+  const currentCGPA = cgpaData[cgpaData.length - 1];
+  const maxCGPA = 4.0;
 
-  const maxClasses = Math.max(...weeklyAttendance.map(d => d.total), 1);
+  // Get student info with fallbacks
+  const studentName = user?.name || 'Student';
+  const studentRollNo = user?.roll_no || 'N/A';
+  const studentDepartment = user?.department || 'Department';
+  const studentClass = user?.class_name || 'Class';
+
+  // Get next class info
+  const nextClass = todayClasses[0] || {
+    subject: 'Advanced UI Patterns',
+    room: 'Studio A, Design Block',
+    time: '09:00 AM',
+    startsIn: '14m'
+  };
+
+  // Quick action items
+  const quickActions = [
+    { label: 'Gate Pass', icon: CreditCard, color: 'bg-emerald-500/10', iconColor: 'text-emerald-600' },
+    { label: 'Pay Fees', icon: DollarSign, color: 'bg-amber-500/10', iconColor: 'text-amber-600' },
+    { label: 'Requests', icon: Heart, color: 'bg-rose-500/10', iconColor: 'text-rose-600' },
+    { label: 'Counseling', icon: UserCircle, color: 'bg-purple-500/10', iconColor: 'text-purple-600' },
+  ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader
-          tabs={
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-                Dashboard
-              </Button>
-              <Link href="/student/attendance">
-                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                  Attendance
-                </Button>
-              </Link>
-              <Link href="/student/assignments">
-                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                  Assignments
-                </Button>
-              </Link>
-              <Link href="/student/grades">
-                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                  Grades
-                </Button>
-              </Link>
-              <Link href="/student/leave-request">
-                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                  Leave Request
-                </Button>
-              </Link>
-              <Link href="/student/announcements">
-                <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                  Announcements
-                </Button>
-              </Link>
-            </div>
-          }
-        />
-        <main className="p-6 max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Loading dashboard...</p>
+      <StudentLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e05252] mx-auto mb-4"></div>
+            <p className="text-[#666]">Loading your dashboard...</p>
           </div>
-        </main>
-      </div>
+        </div>
+      </StudentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Dashboard
-            </Button>
-            <Link href="/student/attendance">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-            </Link>
-            <Link href="/student/assignments">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
-            </Link>
-            <Link href="/student/grades">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Grades
-              </Button>
-            </Link>
-            <Link href="/student/leave-request">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Leave Request
-              </Button>
-            </Link>
-            <Link href="/student/announcements">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Announcements
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-foreground mb-1">Quickly analyse your progress</h2>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          {kpiData.map((kpi, idx) => (
-            <Card key={idx} className="shadow-soft border-border rounded-2xl">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+    <StudentLayout>
+      <div className="grid grid-cols-12 gap-6">
+            {/* Hero Bento: Digital ID */}
+            <div className="col-span-8 bg-white rounded-2xl p-8 flex gap-8 relative overflow-hidden">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <Badge className="bg-[#e05252]/10 text-[#e05252] border-[#e05252]/20 hover:bg-[#e05252]/10 text-[10px] font-bold tracking-wider mb-4">
+                    ACTIVE ENROLLMENT
+                  </Badge>
+                  <h2 className="text-5xl font-extrabold text-[#1a1a1a] tracking-tight mb-2">
+                    {studentName}
+                  </h2>
+                  <p className="text-lg font-medium text-[#666]">
+                    {studentDepartment} • {studentClass}
+                  </p>
+                </div>
+                <div className="flex gap-8 pt-8 border-t border-[#e5e5e5] mt-8">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">{kpi.label}</p>
-                    <p className="text-3xl font-bold text-foreground">{kpi.value}</p>
+                    <p className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-1">Roll Number</p>
+                    <p className="text-xl font-bold text-[#1a1a1a]">{studentRollNo}</p>
                   </div>
-                  <div className={`flex items-center gap-1 text-xs font-medium ${kpi.isPositive ? 'text-success' : 'text-destructive'}`}>
-                    {kpi.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {kpi.trend}%
+                  <div>
+                    <p className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-1">Department</p>
+                    <p className="text-xl font-bold text-[#1a1a1a]">{studentDepartment}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+              <div className="w-48 bg-[#f2f0ed] border border-[#e5e5e5] rounded-2xl p-6 flex flex-col items-center justify-center">
+                <div className="w-full aspect-square bg-white border border-[#e5e5e5] rounded-lg shadow-inner mb-4 flex items-center justify-center">
+                  <div className="w-32 h-32 bg-[#1a1a1a]/5 rounded" />
+                </div>
+                <p className="text-[10px] font-bold text-[#1a1a1a] uppercase tracking-wider">SCAN FOR ENTRY</p>
+              </div>
+              <div className="absolute -right-96 -top-40 w-48 h-48 bg-[#e05252]/5 rounded-full blur-3xl" />
+            </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button variant="ghost" className="rounded-full px-4 py-2 h-auto text-sm text-foreground hover:bg-secondary">
-            All
-          </Button>
-          <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90 text-sm">
-            This Week
-          </Button>
-          <Button variant="ghost" className="rounded-full px-4 py-2 h-auto text-sm text-foreground hover:bg-secondary">
-            This Month
-          </Button>
-          <Button size="icon" className="rounded-full h-9 w-9 bg-lime-400 hover:bg-lime-500 text-[#141414] ml-2">
-            <Plus className="h-5 w-5" />
-          </Button>
-        </div>
+            {/* Next Class */}
+            <div className="col-span-4 bg-white rounded-2xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-[#1a1a1a]">Next Class</h3>
+                  <Clock className="w-[18px] h-[21px] text-[#666]" />
+                </div>
+                <div>
+                  <h4 className="text-2xl font-bold text-[#1a1a1a] tracking-tight mb-1">
+                    {nextClass.subject}
+                  </h4>
+                  <div className="flex items-center gap-1 text-sm text-[#666]">
+                    <MapPin className="w-2 h-2.5" />
+                    <span>{nextClass.room}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-8 border-t border-[#e5e5e5] mt-8">
+                <div className="flex items-center justify-between text-xs font-bold mb-2">
+                  <span className="text-[#e05252]">Starts in {nextClass.startsIn}</span>
+                  <span className="text-[#666]">{nextClass.time}</span>
+                </div>
+                <div className="h-2 bg-[#f2f0ed] rounded-full overflow-hidden">
+                  <div className="h-full w-[70%] bg-[#e05252] rounded-full shadow-[0_0_12px_rgba(224,82,82,0.3)]" />
+                </div>
+              </div>
+            </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Weekly Attendance Chart */}
-          <Card className="lg:col-span-2 shadow-soft border-border rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-semibold">Weekly Attendance</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <span className="text-lg">⋯</span>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end justify-between h-48 gap-4 mt-4">
-                {weeklyAttendance.map((day, idx) => {
-                  const percentage = day.total > 0 ? (day.present / day.total) * 100 : 0;
-                  const height = day.total > 0 ? (day.present / maxClasses) * 100 : 0;
+            {/* Academic Performance */}
+            <div className="col-span-5 bg-white rounded-2xl p-6">
+              <div className="flex items-start justify-between mb-8">
+                <div>
+                  <h3 className="text-lg font-bold text-[#1a1a1a] mb-1">Academic Performance</h3>
+                  <p className="text-xs text-[#666]">Cumulative GPA Trend</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-extrabold text-[#8b5cf6]">{currentCGPA.toFixed(2)}</p>
+                  <p className="text-[10px] font-bold text-[#666] uppercase tracking-wider">Current CGPA</p>
+                </div>
+              </div>
+              <div className="flex items-end justify-between h-36 gap-2 px-2">
+                {cgpaData.map((gpa, idx) => {
+                  const height = (gpa / maxCGPA) * 100;
+                  const isHighlighted = idx === cgpaData.length - 1;
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                      <div className="w-full relative" style={{ height: '160px' }}>
-                        {day.total > 0 && (
-                          <div className="absolute bottom-0 w-full rounded-t-lg gradient-orange transition-all" style={{ height: `${height}%` }}>
-                            {percentage === 100 && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-foreground">
-                                {day.present}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">{day.day}</span>
+                    <div key={idx} className="flex-1 flex flex-col items-center gap-3">
+                      <div 
+                        className={`w-full rounded-t-lg transition-all ${
+                          isHighlighted 
+                            ? 'bg-[#8b5cf6]' 
+                            : idx === cgpaData.length - 2 
+                            ? 'bg-[#8b5cf6]/10 border-t-2 border-[#8b5cf6]' 
+                            : 'bg-[#f2f0ed] border border-[#e5e5e5] border-b-0'
+                        }`}
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="text-[10px] font-bold text-[#666] uppercase tracking-tight">
+                        Sem {idx + 1}
+                      </span>
                     </div>
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Recent Assignments */}
-          <Card className="shadow-soft border-border rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="flex items-center justify-between w-full gap-3">
-                <CardTitle className="text-base font-semibold">Recent Assignments</CardTitle>
-                <Link href="/student/assignments">
-                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
-                    See all
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {assignments.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No assignments yet</p>
-              ) : (
-                assignments.slice(0, 3).map((assignment, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
+            {/* Quick Actions */}
+            <div className="col-span-7 bg-white rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-[#1a1a1a] mb-6">Quick Actions</h3>
+              <div className="grid grid-cols-4 gap-4 mb-8">
+                {quickActions.map((action, idx) => (
+                  <button
+                    key={idx}
+                    className="bg-[#f2f0ed] border border-[#e5e5e5] rounded-xl p-4 flex flex-col items-center gap-3 hover:bg-[#e5e5e5] transition-colors"
+                  >
+                    <div className={`w-12 h-12 ${action.color} rounded-full flex items-center justify-center`}>
+                      <action.icon className={`w-5 h-5 ${action.iconColor}`} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{assignment.title}</p>
-                      <p className="text-xs text-muted-foreground">{assignment.subject}</p>
-                    </div>
-                    <span className={`text-xs font-medium ${assignment.status === 'submitted' ? 'text-success' : 'text-warning'}`}>
-                      {assignment.status === 'submitted' ? (assignment.marks ? `${assignment.marks}%` : '✓') : assignment.deadline}
+                    <span className="text-xs font-bold text-[#1a1a1a] uppercase tracking-wide">
+                      {action.label}
                     </span>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft border-border rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="flex items-center justify-between w-full gap-3">
-                <CardTitle className="text-base font-semibold">Latest Announcements</CardTitle>
-                <Link href="/student/announcements">
-                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
-                    See all
-                  </Button>
-                </Link>
+                  </button>
+                ))}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {latestAnnouncements.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No announcements yet</p>
-              ) : (
-                latestAnnouncements.map((announcement) => (
-                  <div key={announcement.id} className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <Megaphone className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-medium text-foreground truncate">{announcement.subject}</p>
-                        <Badge variant="outline">{announcement.club_name}</Badge>
+              
+              {/* Pending Tasks */}
+              <div className="border-t border-[#e5e5e5] pt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-bold text-[#666] uppercase tracking-widest">Pending Tasks</h4>
+                  <button className="text-[10px] font-bold text-[#e05252]">VIEW ALL</button>
+                </div>
+                <div className="space-y-3">
+                  {assignments.slice(0, 2).map((assignment, idx) => (
+                    <div
+                      key={idx}
+                      className={`bg-[#f2f0ed] border-l-4 ${
+                        idx === 0 ? 'border-[#e05252]' : 'border-[#8b5cf6]'
+                      } rounded-lg p-3 flex items-center justify-between`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-3 h-3.5 text-[#666]" />
+                        <span className="text-sm font-medium text-[#1a1a1a]">{assignment.title}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {announcement.description || 'New event announcement posted by faculty.'}
-                      </p>
+                      <span className="text-[10px] font-bold text-[#666]">
+                        {idx === 0 ? 'TOMORROW' : 'FRIDAY'}
+                      </span>
                     </div>
-                    {announcement.link ? (
-                      <a href={announcement.link} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-soft border-border rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div className="flex items-center justify-between w-full gap-3">
-                <CardTitle className="text-base font-semibold">Leave Status</CardTitle>
-                <Link href="/student/leave-request">
-                  <Button variant="link" className="text-xs text-[#141414] p-0 h-auto">
-                    Apply
-                  </Button>
-                </Link>
+                  ))}
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {latestLeaveRequest ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-foreground truncate">{latestLeaveRequest.reason}</p>
-                    <Badge variant={latestLeaveRequest.status === 'approved' ? 'default' : latestLeaveRequest.status === 'rejected' ? 'destructive' : 'secondary'}>
-                      {latestLeaveRequest.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(latestLeaveRequest.from_date).toLocaleDateString()} to {new Date(latestLeaveRequest.to_date).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {pendingLeaveCount} pending request{pendingLeaveCount === 1 ? '' : 's'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">No leave requests submitted yet.</p>
-                  <Link href="/student/leave-request">
-                    <Button size="sm">Request Leave</Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Upcoming Classes */}
-          <Card className="shadow-soft border-border rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Today's Schedule</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {todayClasses.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No classes today</p>
-              ) : (
-                todayClasses.map((cls, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{cls.subject}</p>
-                      <p className="text-xs text-muted-foreground">{cls.room}</p>
-                    </div>
-                    <span className="text-xs font-medium text-muted-foreground">{cls.time}</span>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Performance Overview */}
-          <Card className="lg:col-span-2 shadow-soft border-border rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Subject Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {subjectPerformance.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No performance data yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {subjectPerformance.map((item, idx) => {
-                    const colors = ['bg-lime-400', 'bg-lime-300', 'bg-yellow-300', 'bg-lime-500'];
-                    return (
-                      <div key={idx}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-foreground">{item.subject}</span>
-                          <span className="text-sm font-semibold text-foreground">{item.score}%</span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                          <div className={`h-full ${colors[idx % colors.length]} rounded-full transition-all`} style={{ width: `${item.score}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
+            {/* Campus Feed */}
+            <div className="col-span-12 bg-white rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-[#1a1a1a]">Campus Feed</h3>
+                <div className="flex gap-2">
+                  <Button className="bg-[#e05252] hover:bg-[#e05252]/90 text-white text-xs font-bold h-7 px-4 rounded-full">
+                    Announcements
+                  </Button>
+                  <Button variant="ghost" className="text-[#666] text-xs font-bold h-7 px-4 rounded-full">
+                    Events
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+              </div>
+              <div className="grid grid-cols-3 gap-6">
+                {latestAnnouncements.map((announcement, idx) => (
+                  <div key={idx} className="bg-[#f2f0ed] border border-[#e5e5e5] rounded-xl p-4">
+                    <div className="w-full h-32 bg-[#e5e5e5] rounded-lg mb-3" />
+                    <h4 className="text-sm font-bold text-[#1a1a1a] leading-snug mb-2">
+                      {announcement.subject}
+                    </h4>
+                    <p className="text-xs text-[#666] leading-relaxed line-clamp-2">
+                      {announcement.description || 'New announcement posted by faculty.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+    </StudentLayout>
   );
 };
 

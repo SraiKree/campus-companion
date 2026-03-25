@@ -2,19 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import StudentLayout from '@/components/layout/StudentLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
+import { FileText, Filter } from 'lucide-react';
 
 type AssignmentStatus = 'pending' | 'submitted' | 'graded';
 
@@ -120,12 +117,12 @@ export default function StudentAssignmentsPage() {
   const getStatusBadge = (status?: AssignmentStatus) => {
     switch (status) {
       case 'graded':
-        return <Badge variant="default">Graded</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Graded</Badge>;
       case 'submitted':
-        return <Badge variant="secondary">Submitted</Badge>;
+        return <Badge className="bg-[#8b5cf6]/10 text-[#8b5cf6] border-[#8b5cf6]/20">Submitted</Badge>;
       case 'pending':
       default:
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge className="bg-[#e05252]/10 text-[#e05252] border-[#e05252]/20">Pending</Badge>;
     }
   };
 
@@ -190,9 +187,14 @@ export default function StudentAssignmentsPage() {
 
   if (loading || loadingAssignments) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading assignments...</p>
-      </div>
+      <StudentLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e05252] mx-auto mb-4"></div>
+            <p className="text-[#666]">Loading assignments...</p>
+          </div>
+        </div>
+      </StudentLayout>
     );
   }
 
@@ -201,39 +203,20 @@ export default function StudentAssignmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/student">
-              <Button variant="ghost">Dashboard</Button>
-            </Link>
-            <Link href="/student/attendance">
-              <Button variant="ghost">Attendance</Button>
-            </Link>
-            <Button className="bg-black text-white">Assignments</Button>
-            <Link href="/student/grades">
-              <Button variant="ghost">Grades</Button>
-            </Link>
-            <Link href="/student/leave-request">
-              <Button variant="ghost">Leave Request</Button>
-            </Link>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+    <StudentLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Assignments</h1>
-            <p className="text-sm text-muted-foreground mt-1">View and submit assignments for your classes.</p>
+            <h1 className="text-3xl font-bold text-[#1a1a1a] mb-1">Assignments</h1>
+            <p className="text-[#666]">View and submit assignments for your classes</p>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Status</span>
+              <Filter className="w-4 h-4 text-[#666]" />
               <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 border-[#e5e5e5] rounded-xl">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,93 +229,92 @@ export default function StudentAssignmentsPage() {
               </Select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Subject</span>
-              <Select value={subjectFilter} onValueChange={(val) => setSubjectFilter(val)}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="All subjects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All subjects</SelectItem>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={subjectFilter} onValueChange={(val) => setSubjectFilter(val)}>
+              <SelectTrigger className="w-44 border-[#e5e5e5] rounded-xl">
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All subjects</SelectItem>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject} value={subject}>
+                    {subject}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {error ? (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6">
-            <p className="text-sm text-destructive">{error}</p>
+        {error && (
+          <div className="rounded-xl border border-[#e05252]/20 bg-[#e05252]/5 p-6">
+            <p className="text-sm text-[#e05252]">{error}</p>
           </div>
-        ) : null}
+        )}
 
         {filteredAssignments.length === 0 ? (
-          <div className="text-center mt-20">
-            <p className="text-muted-foreground">No assignments found for the selected filters.</p>
+          <div className="text-center py-20">
+            <FileText className="h-12 w-12 text-[#666] mx-auto mb-4" />
+            <p className="text-[#666]">No assignments found for the selected filters</p>
           </div>
         ) : (
-          <Card className="shadow-soft border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">Your Assignments</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-2xl border border-[#e5e5e5] overflow-hidden">
+            <div className="p-6 border-b border-[#e5e5e5]">
+              <h2 className="text-lg font-bold text-[#1a1a1a]">Your Assignments</h2>
+            </div>
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Deadline</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-[#e5e5e5] hover:bg-transparent">
+                    <TableHead className="text-[#666] font-bold text-xs uppercase">Title</TableHead>
+                    <TableHead className="text-[#666] font-bold text-xs uppercase">Subject</TableHead>
+                    <TableHead className="text-[#666] font-bold text-xs uppercase">Deadline</TableHead>
+                    <TableHead className="text-[#666] font-bold text-xs uppercase">Status</TableHead>
+                    <TableHead className="text-[#666] font-bold text-xs uppercase">Grade</TableHead>
+                    <TableHead className="text-right text-[#666] font-bold text-xs uppercase">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAssignments.map((assignment) => (
-                    <TableRow key={assignment.id}>
+                    <TableRow key={assignment.id} className="border-[#e5e5e5]">
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium">{assignment.title}</span>
-                          {assignment.description ? (
-                            <span className="text-xs text-muted-foreground line-clamp-2">
+                          <span className="font-medium text-[#1a1a1a]">{assignment.title}</span>
+                          {assignment.description && (
+                            <span className="text-xs text-[#666] line-clamp-2">
                               {assignment.description}
                             </span>
-                          ) : null}
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{assignment.subject}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-[#666]">{assignment.subject}</TableCell>
+                      <TableCell className="text-[#666]">
                         {assignment.deadline ? new Date(assignment.deadline).toLocaleDateString() : '—'}
                       </TableCell>
                       <TableCell>{getStatusBadge(assignment.status)}</TableCell>
                       <TableCell>
                         {assignment.status === 'graded' ? (
-                          <span className="font-semibold">{assignment.marks ?? '—'}</span>
+                          <span className="font-bold text-[#1a1a1a]">{assignment.marks ?? '—'}</span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-[#666]">—</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {assignment.file_url ? (
+                          {assignment.file_url && (
                             <a
-                              className="text-sm font-medium text-primary hover:underline"
+                              className="text-sm font-medium text-[#e05252] hover:underline"
                               href={assignment.file_url}
                               target="_blank"
                               rel="noreferrer"
                             >
                               View
                             </a>
-                          ) : null}
+                          )}
                           <Button
                             size="sm"
                             disabled={assignment.status === 'graded' || isSubmitting}
                             onClick={() => openSubmissionDialog(assignment)}
+                            className="bg-[#e05252] hover:bg-[#e05252]/90 text-white rounded-lg"
                           >
                             {assignment.status === 'pending' ? 'Submit' : 'Resubmit'}
                           </Button>
@@ -342,59 +324,71 @@ export default function StudentAssignmentsPage() {
                   ))}
                 </TableBody>
               </Table>
-              <p className="text-xs text-muted-foreground mt-4">
-                Grades and feedback will appear once your instructor reviews the submission.
+            </div>
+            <div className="p-4 border-t border-[#e5e5e5]">
+              <p className="text-xs text-[#666]">
+                Grades and feedback will appear once your instructor reviews the submission
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogContent>
+          <DialogContent className="border-[#e5e5e5]">
             <DialogHeader>
-              <DialogTitle>Submit Assignment</DialogTitle>
+              <DialogTitle className="text-[#1a1a1a]">Submit Assignment</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4">
-              {selectedAssignment ? (
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{selectedAssignment.title}</p>
-                  <p className="text-sm text-muted-foreground">{selectedAssignment.subject}</p>
-                  {selectedAssignment.deadline ? (
-                    <p className="text-sm text-muted-foreground">Deadline: {new Date(selectedAssignment.deadline).toLocaleString()}</p>
-                  ) : null}
+              {selectedAssignment && (
+                <div className="space-y-1 p-4 bg-[#f2f0ed] rounded-xl">
+                  <p className="text-sm font-bold text-[#1a1a1a]">{selectedAssignment.title}</p>
+                  <p className="text-sm text-[#666]">{selectedAssignment.subject}</p>
+                  {selectedAssignment.deadline && (
+                    <p className="text-sm text-[#666]">
+                      Deadline: {new Date(selectedAssignment.deadline).toLocaleString()}
+                    </p>
+                  )}
                 </div>
-              ) : null}
+              )}
 
               <div>
-                <label className="text-sm font-medium">Choose file</label>
+                <label className="text-sm font-bold text-[#1a1a1a]">Choose file</label>
                 <input
                   type="file"
-                  className="mt-2 w-full"
+                  className="mt-2 w-full text-sm text-[#666]"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Allowed file types: PDF, DOCX, ZIP (max 15MB)</p>
+                <p className="text-xs text-[#666] mt-1">Allowed: PDF, DOCX, ZIP (max 15MB)</p>
               </div>
 
-              {selectedFile ? (
-                <div className="rounded-md border bg-muted p-3">
-                  <p className="text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              {selectedFile && (
+                <div className="rounded-xl border border-[#e5e5e5] bg-[#f2f0ed] p-3">
+                  <p className="text-sm font-medium text-[#1a1a1a]">{selectedFile.name}</p>
+                  <p className="text-xs text-[#666]">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
-              ) : null}
+              )}
             </div>
 
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpenDialog(false)}>
+              <Button 
+                variant="ghost" 
+                onClick={() => setOpenDialog(false)}
+                className="hover:bg-[#f2f0ed]"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleUpload} disabled={isSubmitting || !selectedFile}>
+              <Button 
+                onClick={handleUpload} 
+                disabled={isSubmitting || !selectedFile}
+                className="bg-[#e05252] hover:bg-[#e05252]/90 text-white"
+              >
                 {isSubmitting ? 'Uploading…' : 'Upload'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </main>
-    </div>
+      </div>
+    </StudentLayout>
   );
 }
