@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, Clock, CreditCard, FileText, 
-  Heart, UserCircle, DollarSign, Plus, X, GripVertical
+  Heart, UserCircle, DollarSign, Plus, X, GripVertical, Share2, Copy, Check
 } from 'lucide-react';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import { useAuth } from '@/contexts/AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from '@/components/ui/use-toast';
 
 type WidgetType = 
   | 'next-class'
@@ -50,6 +52,7 @@ const StudentDashboard = () => {
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_LAYOUT);
   const [isWidgetMenuOpen, setIsWidgetMenuOpen] = useState(false);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+  const [copiedQR, setCopiedQR] = useState(false);
 
   // Load layout from localStorage on mount
   useEffect(() => {
@@ -85,6 +88,49 @@ const StudentDashboard = () => {
   const studentRollNo = user?.roll_no || 'N/A';
   const studentDepartment = user?.department || 'Department';
   const studentClass = user?.class_name || 'Class';
+  const userId = user?.id || '';
+
+  // Generate public profile URL
+  const profileUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/student/profile/${userId}`
+    : '';
+
+  // Copy QR code URL to clipboard
+  const handleCopyQR = async () => {
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopiedQR(true);
+      toast({
+        title: 'Copied!',
+        description: 'Profile link copied to clipboard',
+      });
+      setTimeout(() => setCopiedQR(false), 2000);
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy link',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Share QR code
+  const handleShareQR = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${studentName}'s Profile`,
+          text: `View ${studentName}'s student profile`,
+          url: profileUrl,
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
+    } else {
+      // Fallback to copy
+      handleCopyQR();
+    }
+  };
 
   // Get next class info
   const nextClass = todayClasses[0] ? {
@@ -487,10 +533,38 @@ const StudentDashboard = () => {
               </div>
             </div>
             <div className="w-48 bg-[#f2f0ed] border border-[#e5e5e5] rounded-2xl p-6 flex flex-col items-center justify-center">
-              <div className="w-full aspect-square bg-white border border-[#e5e5e5] rounded-lg shadow-inner mb-4 flex items-center justify-center">
-                <div className="w-32 h-32 bg-[#1a1a1a]/5 rounded" />
+              <div className="w-full aspect-square bg-white border border-[#e5e5e5] rounded-lg shadow-inner mb-4 flex items-center justify-center p-3">
+                {profileUrl && (
+                  <QRCodeSVG
+                    value={profileUrl}
+                    size={128}
+                    level="H"
+                    includeMargin={false}
+                    className="w-full h-full"
+                  />
+                )}
               </div>
-              <p className="text-[10px] font-bold text-[#1a1a1a] uppercase tracking-wider">SCAN FOR ENTRY</p>
+              <p className="text-[10px] font-bold text-[#1a1a1a] uppercase tracking-wider mb-3">SCAN FOR PROFILE</p>
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={handleCopyQR}
+                  className="flex-1 p-2 bg-white border border-[#e5e5e5] rounded-lg hover:bg-[#e5e5e5] transition-colors flex items-center justify-center"
+                  title="Copy link"
+                >
+                  {copiedQR ? (
+                    <Check className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-[#666]" />
+                  )}
+                </button>
+                <button
+                  onClick={handleShareQR}
+                  className="flex-1 p-2 bg-white border border-[#e5e5e5] rounded-lg hover:bg-[#e5e5e5] transition-colors flex items-center justify-center"
+                  title="Share profile"
+                >
+                  <Share2 className="w-4 h-4 text-[#666]" />
+                </button>
+              </div>
             </div>
             <div className="absolute -right-96 -top-40 w-48 h-48 bg-[#e05252]/5 rounded-full blur-3xl" />
           </div>

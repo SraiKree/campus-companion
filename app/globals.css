@@ -40,6 +40,85 @@
   }
 }
 
+/* ── Student/Faculty theme tokens ───────────────────────────────────────── */
+:root {
+  --ch-bg:             #f9f8f6;
+  --ch-sidebar:        #f2f0ed;
+  --ch-header:         rgba(249, 248, 246, 0.80);
+  --ch-card:           #ffffff;
+  --ch-card-2:         #f9f8f6;
+  --ch-border:         #e5e5e5;
+  --ch-text:           #1a1a1a;
+  --ch-muted:          #666666;
+  --ch-accent:         #e05252;
+  --ch-accent-soft:    rgba(224, 82, 82, 0.08);
+  --ch-input:          #ffffff;
+  --ch-muted-bg:       #f2f0ed;
+  --ch-hover:          rgba(255, 255, 255, 0.60);
+  --ch-nav-active:     #ffffff;
+  --ch-divider:        #e5e5e5;
+  --ch-invert-text:    #ffffff;
+}
+
+.dark {
+  --ch-bg:             #0e0e0e;
+  --ch-sidebar:        #131313;
+  --ch-header:         rgba(14, 14, 14, 0.80);
+  --ch-card:           #1a1a1a;
+  --ch-card-2:         #131313;
+  --ch-border:         rgba(255, 255, 255, 0.07);
+  --ch-text:           #ffffff;
+  --ch-muted:          #adaaaa;
+  --ch-accent:         #ff8d89;
+  --ch-accent-soft:    rgba(255, 141, 137, 0.10);
+  --ch-input:          #131313;
+  --ch-muted-bg:       #20201f;
+  --ch-hover:          rgba(255, 255, 255, 0.04);
+  --ch-nav-active:     #262626;
+  --ch-divider:        rgba(255, 255, 255, 0.08);
+  --ch-invert-text:    #1a1a1a;
+}
+
+/* ── Smooth colour transitions for student/faculty pages ─────────────────── */
+.ch-themed,
+.ch-themed *:not(.no-transition):not(.no-transition *) {
+  transition:
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color            0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color     0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow       0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    fill             0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark mode page-content overrides ───────────────────────────────────── */
+/* These cover the hardcoded Tailwind arbitrary-value classes used throughout */
+/* student & faculty page components.                                        */
+.dark .bg-white             { background-color: var(--ch-card)     !important; }
+.dark .bg-\[\#ffffff\]      { background-color: var(--ch-card)     !important; }
+.dark .bg-\[\#f9f8f6\]      { background-color: var(--ch-card-2)   !important; }
+.dark .bg-\[\#f2f0ed\]      { background-color: var(--ch-muted-bg) !important; }
+.dark .text-\[\#1a1a1a\]    { color: var(--ch-text)    !important; }
+.dark .text-\[\#666\]        { color: var(--ch-muted)   !important; }
+.dark .text-\[\#666666\]     { color: var(--ch-muted)   !important; }
+.dark .border-\[\#e5e5e5\]   { border-color: var(--ch-border) !important; }
+.dark .text-\[\#e05252\]     { color: var(--ch-accent)  !important; }
+.dark .bg-\[\#e05252\]       { background-color: var(--ch-accent) !important; }
+.dark .border-\[\#e05252\]   { border-color: var(--ch-accent) !important; }
+.dark .text-\[\#e05252\]\/10 { color: var(--ch-accent-soft) !important; }
+.dark .bg-\[\#1a1a1a\]       { background-color: #0e0e0e !important; }
+
+/* Card shadows in dark mode */
+.dark .shadow-sm,
+.dark .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+
+/* Dividers / separators */
+.dark .divide-\[\#f2f0ed\] > * + * { border-color: var(--ch-border) !important; }
+.dark .divide-y > * + * { border-color: var(--ch-border) !important; }
+
+/* Focus rings */
+.dark input:focus,
+.dark textarea:focus { outline-color: var(--ch-accent); }
+
 @layer utilities {
   .gradient-yellow {
     background: linear-gradient(135deg, #d4ff00 0%, #bfff00 100%);

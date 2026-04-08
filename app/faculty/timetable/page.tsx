@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import FacultyLayout from '@/components/layout/FacultyLayout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
 import { toast } from 'sonner';
 
 interface ClassData {
@@ -295,33 +294,7 @@ export default function FacultyTimetablePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/faculty">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Timetable
-            </Button>
-            <Link href="/faculty/attendance">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-            </Link>
-            <Link href="/faculty/assignments">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-[1400px] mx-auto">
+    <FacultyLayout>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -608,7 +581,6 @@ export default function FacultyTimetablePage() {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+    </FacultyLayout>
   );
 }

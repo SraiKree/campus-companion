@@ -16,30 +16,56 @@ import {
   ChevronRight,
   Clock,
   FileText,
+  Upload,
   Download,
   Search,
   Bell,
   Settings
 } from 'lucide-react';
 
-type AssignmentStatus = 'pending' | 'submitted' | 'graded';
-
-interface Assignment {
-  id: string;
-  title: string;
-  subject: string;
-  subject_code?: string;
-  description?: string;
-  deadline?: string;
-  total_marks?: number;
-  class_name?: string;
-  created_at?: string;
-  status?: AssignmentStatus;
-  marks?: number | null;
-  feedback?: string | null;
-  file_url?: string | null;
-  submitted_at?: string | null;
-}
+// Dummy course data
+const DUMMY_COURSES = [
+  {
+    id: 'cc-302',
+    code: 'CC-302',
+    name: 'Advanced Ceramics',
+    instructor: 'Arlo Thorne',
+    progress: 75,
+    color: '#c44545'
+  },
+  {
+    id: 'ht-104',
+    code: 'HT-104',
+    name: 'History of Ilins',
+    instructor: 'Dr. Elara Vance',
+    progress: 60,
+    color: '#6366f1'
+  },
+  {
+    id: 'gl-212',
+    code: 'GL-212',
+    name: 'Glaze Chemistry',
+    instructor: 'Julian Sallow',
+    progress: 80,
+    color: '#c44545'
+  },
+  {
+    id: 'id-301',
+    code: 'ID-301',
+    name: 'Industrial Casting',
+    instructor: 'Sienna Brooks',
+    progress: 100,
+    color: '#10b981'
+  },
+  {
+    id: 'ph-118',
+    code: 'PH-118',
+    name: 'Philosophy of Aarth',
+    instructor: 'Dr. Marcus Aurel',
+    progress: 0,
+    color: '#c44545'
+  }
+];
 
 interface Course {
   id: string;
@@ -59,6 +85,31 @@ interface StudentInfo {
   section: string;
   semester: string;
   year: string;
+}
+
+export default function StudentCoursesPage() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('assignments');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [expandedUnit, setExpandedUnit] = useState<string | null>('unit-2');
+  id: string;
+  title: string;
+  subject: string;
+  subject_code?: string;
+  description?: string;
+  deadline?: string;
+  total_marks?: number;
+  class_name?: string;
+  created_at?: string;
+  status?: AssignmentStatus;
+  marks?: number | null;
+  feedback?: string | null;
+  file_url?: string | null;
+  submitted_at?: string | null;
 }
 
 const GRADE_COLORS = {
@@ -113,8 +164,6 @@ export default function StudentCoursesPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('assignments');
-  
-  // Courses state
   const [courses, setCourses] = useState<Course[]>([]);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -142,10 +191,34 @@ export default function StudentCoursesPage() {
     }
   }, [authLoading, isAuthenticated, user, router]);
 
+  const fetchAssignments = async () => {
+    setLoadingAssignments(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const res = await fetch('/api/student/assignments', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json?.error || 'Failed to load assignments');
+      }
+
+      const data = await res.json();
+      setAssignments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching assignments:', err);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && user?.role === 'student') {
-      fetchCourses();
       fetchAssignments();
+      fetchCourses();
     }
   }, [authLoading, isAuthenticated, user]);
 
@@ -173,33 +246,11 @@ export default function StudentCoursesPage() {
       }
     } catch (err) {
       console.error('Error fetching courses:', err);
-      toast({ title: 'Error', description: 'Failed to load courses', variant: 'destructive' });
+      // Fallback to dummy data if API fails
+      setCourses(DUMMY_COURSES);
+      setSelectedCourse(DUMMY_COURSES[0]);
     } finally {
       setLoadingCourses(false);
-    }
-  };
-
-  const fetchAssignments = async () => {
-    setLoadingAssignments(true);
-    try {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-
-      const res = await fetch('/api/student/assignments', {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json?.error || 'Failed to load assignments');
-      }
-
-      const data = await res.json();
-      setAssignments(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching assignments:', err);
-    } finally {
-      setLoadingAssignments(false);
     }
   };
 
@@ -254,7 +305,7 @@ export default function StudentCoursesPage() {
     }
   };
 
-  if (authLoading || loadingCourses || loadingAssignments || loadingGrades) {
+  if (authLoading || loadingAssignments || loadingGrades || loadingCourses) {
     return (
       <StudentLayout>
         <div className="flex items-center justify-center h-64">
@@ -298,13 +349,12 @@ export default function StudentCoursesPage() {
             {courses.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-sm text-[#666]">No courses found</p>
-                <p className="text-xs text-[#666] mt-2">Courses will appear based on your department and section</p>
               </div>
             ) : (
-              courses.map((course) => {
-                // Calculate progress based on assignments (set to 0% for now)
-                const progress = 0;
-                const color = '#c44545';
+              courses.map((course, index) => {
+                // Calculate progress based on assignments (dummy for now)
+                const progress = Math.floor(Math.random() * 100);
+                const color = progress >= 80 ? '#10b981' : progress >= 60 ? '#6366f1' : '#c44545';
                 
                 return (
                   <button
@@ -381,109 +431,150 @@ export default function StudentCoursesPage() {
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'assignments' && (
               <div className="space-y-6">
-                {selectedCourse ? (
-                  <>
-                    {/* Assignment Header */}
-                    <div className="space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">
-                            {selectedCourse.name}
-                          </h2>
-                          <div className="flex items-center gap-4 text-sm">
-                            <div className="flex items-center gap-2 text-[#666]">
-                              <span className="font-medium">{selectedCourse.code}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[#666]">
-                              <span>Instructor: {selectedCourse.instructor}</span>
-                            </div>
+                {/* Assignment Header */}
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">
+                        Assignment 4: High-Fire Reduction
+                      </h2>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-2 text-[#c44545]">
+                          <Clock className="w-4 h-4" />
+                          <span className="font-medium">Due: Friday, 11:59 PM</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[#666]">
+                          <Clock className="w-4 h-4" />
+                          <span>Server Time: 09:42 PM</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-1">
+                        Weighting
+                      </p>
+                      <p className="text-3xl font-bold text-[#1a1a1a]">25%</p>
+                    </div>
+                  </div>
+
+                  {/* Assignment Units */}
+                  <div className="space-y-3">
+                    {/* Unit 1 */}
+                    <div className="border border-[#e5e5e5] rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedUnit(expandedUnit === 'unit-1' ? null : 'unit-1')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-[#f2f0ed] transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {expandedUnit === 'unit-1' ? (
+                            <ChevronDown className="w-5 h-5 text-[#666]" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-[#666]" />
+                          )}
+                          <span className="font-medium text-[#1a1a1a]">Unit 1: Mineral Composition</span>
+                        </div>
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-0 font-bold">
+                          COMPLETED
+                        </Badge>
+                      </button>
+                    </div>
+
+                    {/* Unit 2 - Expanded */}
+                    <div className="border-2 border-[#c44545] rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setExpandedUnit(expandedUnit === 'unit-2' ? null : 'unit-2')}
+                        className="w-full flex items-center justify-between p-4 bg-[#c44545]/5"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ChevronDown className="w-5 h-5 text-[#c44545]" />
+                          <span className="font-medium text-[#1a1a1a]">Unit 2: Reduction Dynamics</span>
+                        </div>
+                        <Badge className="bg-[#c44545]/10 text-[#c44545] border-0 font-bold">
+                          IN PROGRESS
+                        </Badge>
+                      </button>
+                      {expandedUnit === 'unit-2' && (
+                        <div className="p-4 border-t border-[#c44545]/20 bg-white">
+                          <p className="text-sm text-[#666] leading-relaxed">
+                            Research the effects of limited oxygen flow in gas kilns on iron oxide glazes.
+                            Focus on the transformation of Red Iron Oxide to Black Iron Oxide at
+                            temperatures exceeding 1200°C.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submission Portal */}
+                <div className="border border-[#e5e5e5] rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-[#1a1a1a] mb-4">Submission Portal</h3>
+                  
+                  <div className="border-2 border-dashed border-[#e5e5e5] rounded-xl p-12 text-center mb-6">
+                    <div className="w-16 h-16 bg-[#c44545]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-[#c44545]" />
+                    </div>
+                    <h4 className="text-lg font-bold text-[#1a1a1a] mb-2">
+                      Drag & drop your research paper
+                    </h4>
+                    <p className="text-sm text-[#666] mb-4">
+                      Supports PDF, ZIP, or GitHub Repository Link
+                    </p>
+                    <Button className="bg-[#c44545] hover:bg-[#c44545]/90 text-white rounded-lg">
+                      Select Files
+                    </Button>
+                  </div>
+
+                  {/* Submission History */}
+                  <div>
+                    <h4 className="text-sm font-bold text-[#1a1a1a] uppercase tracking-wider mb-4">
+                      Submission History
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-[#f2f0ed] rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm">
+                            <p className="font-bold text-[#1a1a1a] mb-1">CER-402-V1</p>
+                            <p className="text-xs text-[#666]">Oct 12, 14:32</p>
                           </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-emerald-600">Accepted</span>
+                          </div>
+                          <Badge className="bg-emerald-500/10 text-emerald-600 border-0 text-xs">
+                            4% Match
+                          </Badge>
+                          <button className="p-2 hover:bg-white rounded-lg transition-colors">
+                            <Download className="w-4 h-4 text-[#666]" />
+                          </button>
                         </div>
                       </div>
 
-                      {/* Assignments List */}
-                      <div className="space-y-3">
-                        {assignments.filter(a => a.subject === selectedCourse.name).length === 0 ? (
-                          <div className="text-center py-12 bg-[#f2f0ed] rounded-xl">
-                            <FileText className="w-12 h-12 text-[#666] mx-auto mb-3" />
-                            <p className="text-[#666]">No assignments for this course yet</p>
+                      <div className="flex items-center justify-between p-4 bg-[#f2f0ed] rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm">
+                            <p className="font-bold text-[#1a1a1a] mb-1">CER-402-D3</p>
+                            <p className="text-xs text-[#666]">Oct 10, 09:15</p>
                           </div>
-                        ) : (
-                          assignments
-                            .filter(a => a.subject === selectedCourse.name)
-                            .map((assignment) => (
-                              <div key={assignment.id} className="border border-[#e5e5e5] rounded-xl overflow-hidden">
-                                <button
-                                  onClick={() => setExpandedUnit(expandedUnit === assignment.id ? null : assignment.id)}
-                                  className="w-full flex items-center justify-between p-4 hover:bg-[#f2f0ed] transition-colors"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    {expandedUnit === assignment.id ? (
-                                      <ChevronDown className="w-5 h-5 text-[#666]" />
-                                    ) : (
-                                      <ChevronRight className="w-5 h-5 text-[#666]" />
-                                    )}
-                                    <span className="font-medium text-[#1a1a1a]">{assignment.title}</span>
-                                  </div>
-                                  <Badge className={
-                                    assignment.status === 'graded' 
-                                      ? 'bg-emerald-500/10 text-emerald-600 border-0 font-bold'
-                                      : assignment.status === 'submitted'
-                                      ? 'bg-[#8b5cf6]/10 text-[#8b5cf6] border-0 font-bold'
-                                      : 'bg-[#c44545]/10 text-[#c44545] border-0 font-bold'
-                                  }>
-                                    {assignment.status?.toUpperCase() || 'PENDING'}
-                                  </Badge>
-                                </button>
-                                {expandedUnit === assignment.id && (
-                                  <div className="p-4 border-t border-[#e5e5e5] bg-white">
-                                    <p className="text-sm text-[#666] leading-relaxed mb-4">
-                                      {assignment.description || 'No description provided'}
-                                    </p>
-                                    {assignment.deadline && (
-                                      <div className="flex items-center gap-2 text-sm text-[#666] mb-4">
-                                        <Clock className="w-4 h-4" />
-                                        <span>Due: {new Date(assignment.deadline).toLocaleString()}</span>
-                                      </div>
-                                    )}
-                                    <div className="flex gap-2">
-                                      {assignment.file_url && (
-                                        <a
-                                          href={assignment.file_url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="inline-flex items-center gap-2 px-4 py-2 border border-[#e5e5e5] text-[#666] rounded-lg text-sm font-medium hover:bg-[#f2f0ed] transition-colors"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                          View Submission
-                                        </a>
-                                      )}
-                                      {assignment.status !== 'graded' && (
-                                        <Button
-                                          onClick={() => {
-                                            setSelectedAssignment(assignment);
-                                            setOpenDialog(true);
-                                          }}
-                                          className="bg-[#c44545] hover:bg-[#c44545]/90 text-white rounded-lg"
-                                        >
-                                          {assignment.status === 'pending' ? 'Submit' : 'Resubmit'}
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))
-                        )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-amber-600">Superseded</span>
+                          </div>
+                          <Badge className="bg-amber-500/10 text-amber-600 border-0 text-xs">
+                            18% Match
+                          </Badge>
+                          <button className="p-2 hover:bg-white rounded-lg transition-colors">
+                            <Download className="w-4 h-4 text-[#666]" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-20">
-                    <FileText className="w-16 h-16 text-[#666] mx-auto mb-4" />
-                    <p className="text-[#666]">Select a course to view assignments</p>
                   </div>
-                )}
+                </div>
               </div>
             )}
 

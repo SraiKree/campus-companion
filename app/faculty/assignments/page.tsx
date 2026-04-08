@@ -2,12 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import FacultyLayout from '@/components/layout/FacultyLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -314,38 +312,7 @@ export default function FacultyAssignmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/faculty">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/faculty/timetable">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Timetable
-              </Button>
-            </Link>
-            <Link href="/faculty/attendance">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-            </Link>
-            <Link href="/faculty/grades">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Grades
-              </Button>
-            </Link>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Assignments
-            </Button>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto">
+    <FacultyLayout>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold">Assignments</h1>
@@ -670,7 +637,6 @@ export default function FacultyAssignmentsPage() {
             ) : null}
           </DialogContent>
         </Dialog>
-      </main>
-    </div>
+    </FacultyLayout>
   );
 }

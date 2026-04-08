@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import FacultyLayout from '@/components/layout/FacultyLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -378,38 +378,7 @@ export default function FacultyGradesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/faculty">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/faculty/timetable">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Timetable
-              </Button>
-            </Link>
-            <Link href="/faculty/attendance">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-            </Link>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Grades
-            </Button>
-            <Link href="/faculty/assignments">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto">
+    <FacultyLayout>
         {!selectedClass ? (
           // Classes List View
           <div>
@@ -838,7 +807,6 @@ export default function FacultyGradesPage() {
             )}
           </div>
         )}
-      </main>
-    </div>
+    </FacultyLayout>
   );
 }

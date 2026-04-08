@@ -3,14 +3,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import FacultyLayout from '@/components/layout/FacultyLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Users, Clock, MapPin, Calendar, GraduationCap, Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Search, Calendar, Clock, MapPin, GraduationCap } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -42,11 +39,6 @@ interface Student {
   section: string;
 }
 
-interface AttendanceRecord {
-  student_roll_number: string;
-  status: 'present' | 'absent';
-}
-
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const PERIODS = [
   { number: 1, label: '9:20-10:20' },
@@ -67,74 +59,25 @@ export default function FacultyAttendancePage() {
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState(false);
-  
-  // Academic period state
   const [availablePeriods, setAvailablePeriods] = useState<AcademicPeriod[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<AcademicPeriod | null>(null);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
-
-  // Pagination, sorting, and search state
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<'name' | 'roll_number'>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  // Filtered and sorted students
-  const filteredAndSortedStudents = useMemo(() => {
-    let filtered = students.filter(student => 
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.roll_number.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const filteredStudents = useMemo(() =>
+    students.filter(s =>
+      s.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [students, searchTerm]
+  );
 
-    filtered.sort((a, b) => {
-      const aValue = a[sortField].toLowerCase();
-      const bValue = b[sortField].toLowerCase();
-      
-      if (sortDirection === 'asc') {
-        return aValue.localeCompare(bValue);
-      } else {
-        return bValue.localeCompare(aValue);
-      }
-    });
-
-    return filtered;
-  }, [students, searchTerm, sortField, sortDirection]);
-
-  // Paginated students
-  const paginatedStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedStudents.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedStudents, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredAndSortedStudents.length / itemsPerPage);
-
-  // Reset pagination when search or sort changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, sortField, sortDirection]);
-
-  const handleSort = (field: 'name' | 'roll_number') => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: 'name' | 'roll_number') => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="h-4 w-4" />;
-    }
-    return sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
-  };
+  const presentCount = Array.from(attendance.values()).filter(Boolean).length;
+  const absentCount = students.length - presentCount;
 
   useEffect(() => {
     if (!loading) {
-      if (!isAuthenticated) {
-        router.push('/');
-      } else if (user?.role !== 'faculty') {
+      if (!isAuthenticated || user?.role !== 'faculty') {
         router.push('/');
       } else {
         fetchAvailablePeriods();
@@ -143,28 +86,19 @@ export default function FacultyAttendancePage() {
   }, [loading, isAuthenticated, user, router]);
 
   useEffect(() => {
-    if (selectedPeriod) {
-      fetchClasses();
-    }
+    if (selectedPeriod) fetchClasses();
   }, [selectedPeriod]);
 
   const fetchAvailablePeriods = async () => {
     setLoadingPeriods(true);
     try {
-      const response = await fetch('/api/faculty/attendance/periods');
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch('/api/faculty/attendance/periods');
+      if (res.ok) {
+        const data = await res.json();
         setAvailablePeriods(data.periods || []);
-        
-        // Set current period as default (most recent)
-        if (data.periods && data.periods.length > 0) {
-          setSelectedPeriod(data.periods[0]);
-        }
-      } else {
-        toast.error('Failed to load academic periods');
+        if (data.periods?.length > 0) setSelectedPeriod(data.periods[0]);
       }
-    } catch (error) {
-      console.error('Error fetching periods:', error);
+    } catch {
       toast.error('Failed to load academic periods');
     } finally {
       setLoadingPeriods(false);
@@ -173,18 +107,14 @@ export default function FacultyAttendancePage() {
 
   const fetchClasses = async () => {
     if (!user?.id || !selectedPeriod) return;
-    
     setLoadingClasses(true);
     try {
-      const response = await fetch(`/api/faculty/classes?facultyId=${user.id}&academicYear=${selectedPeriod.year}&semester=${selectedPeriod.semester}`);
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch(`/api/faculty/classes?facultyId=${user.id}&academicYear=${selectedPeriod.year}&semester=${selectedPeriod.semester}`);
+      if (res.ok) {
+        const data = await res.json();
         setClasses(data.classes || []);
-      } else {
-        toast.error('Failed to load classes');
       }
-    } catch (error) {
-      console.error('Error fetching classes:', error);
+    } catch {
       toast.error('Failed to load classes');
     } finally {
       setLoadingClasses(false);
@@ -193,25 +123,19 @@ export default function FacultyAttendancePage() {
 
   const fetchStudents = async (classData: FacultyClass) => {
     setLoadingStudents(true);
-    setSearchTerm(''); // Reset search when switching classes
-    setCurrentPage(1); // Reset pagination
+    setSearchTerm('');
     try {
-      const response = await fetch(`/api/faculty/attendance/students?department=${classData.department}&section=${classData.section}&academicYear=${classData.academic_year}&semester=${classData.semester}`);
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch(
+        `/api/faculty/attendance/students?department=${classData.department}&section=${classData.section}&academicYear=${classData.academic_year}&semester=${classData.semester}`
+      );
+      if (res.ok) {
+        const data = await res.json();
         setStudents(data.students || []);
-        
-        // Initialize attendance map - default all to present
-        const attendanceMap = new Map<string, boolean>();
-        data.students.forEach((student: Student) => {
-          attendanceMap.set(student.roll_number, true);
-        });
-        setAttendance(attendanceMap);
-      } else {
-        toast.error('Failed to load students');
+        const map = new Map<string, boolean>();
+        (data.students || []).forEach((s: Student) => map.set(s.roll_number, true));
+        setAttendance(map);
       }
-    } catch (error) {
-      console.error('Error fetching students:', error);
+    } catch {
       toast.error('Failed to load students');
     } finally {
       setLoadingStudents(false);
@@ -223,31 +147,29 @@ export default function FacultyAttendancePage() {
     fetchStudents(classData);
   };
 
-  const handleAttendanceChange = (rollNumber: string, isPresent: boolean) => {
-    const newAttendance = new Map(attendance);
-    newAttendance.set(rollNumber, isPresent);
-    setAttendance(newAttendance);
-  };
-
-  const handleMarkAll = (isPresent: boolean) => {
-    const newAttendance = new Map<string, boolean>();
-    students.forEach(student => {
-      newAttendance.set(student.roll_number, isPresent);
+  const toggle = (rollNumber: string) => {
+    setAttendance(prev => {
+      const next = new Map(prev);
+      next.set(rollNumber, !next.get(rollNumber));
+      return next;
     });
-    setAttendance(newAttendance);
   };
 
-  const handleSaveAttendance = async () => {
-    if (!selectedClass || !user?.id) return;
+  const markAll = (present: boolean) => {
+    const map = new Map<string, boolean>();
+    students.forEach(s => map.set(s.roll_number, present));
+    setAttendance(map);
+  };
 
+  const handleSave = async () => {
+    if (!selectedClass || !user?.id) return;
     setSavingAttendance(true);
     try {
-      const attendanceData = Array.from(attendance.entries()).map(([rollNumber, isPresent]) => ({
-        student_roll_number: rollNumber,
-        status: isPresent ? 'present' : 'absent'
+      const attendanceData = Array.from(attendance.entries()).map(([roll, present]) => ({
+        student_roll_number: roll,
+        status: present ? 'present' : 'absent',
       }));
-
-      const response = await fetch('/api/faculty/attendance/mark', {
+      const res = await fetch('/api/faculty/attendance/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -256,385 +178,220 @@ export default function FacultyAttendancePage() {
           date: new Date().toISOString().split('T')[0],
           academicYear: selectedClass.academic_year,
           semester: selectedClass.semester,
-          attendance: attendanceData
-        })
+          attendance: attendanceData,
+        }),
       });
-
-      if (response.ok) {
-        toast.success('Attendance saved successfully');
+      if (res.ok) {
+        toast.success('Attendance saved');
         setSelectedClass(null);
         setStudents([]);
         setAttendance(new Map());
       } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to save attendance');
+        const err = await res.json();
+        toast.error(err.error || 'Failed to save');
       }
-    } catch (error) {
-      console.error('Error saving attendance:', error);
+    } catch {
       toast.error('Failed to save attendance');
     } finally {
       setSavingAttendance(false);
     }
   };
 
-  const getPeriodLabel = (start: number, end: number) => {
-    if (start === end) {
-      return `P${start} (${PERIODS[start - 1]?.label})`;
-    }
-    return `P${start}-P${end} (${PERIODS[start - 1]?.label} - ${PERIODS[end - 1]?.label})`;
-  };
+  const getPeriodLabel = (start: number, end: number) =>
+    start === end
+      ? `P${start} · ${PERIODS[start - 1]?.label}`
+      : `P${start}–P${end} · ${PERIODS[start - 1]?.label}`;
 
-  const presentCount = Array.from(attendance.values()).filter(Boolean).length;
-  const absentCount = students.length - presentCount;
-  const filteredPresentCount = paginatedStudents.filter(student => attendance.get(student.roll_number)).length;
-  const filteredAbsentCount = paginatedStudents.length - filteredPresentCount;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || user?.role !== 'faculty') {
-    return null;
-  }
+  if (loading || !isAuthenticated || user?.role !== 'faculty') return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/faculty">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/faculty/timetable">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Timetable
-              </Button>
-            </Link>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Attendance
-            </Button>
-            <Link href="/faculty/assignments">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto">
-        {loadingPeriods ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">Loading academic periods...</p>
-          </div>
-        ) : !selectedClass ? (
-          // Classes List View
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-foreground">Mark Attendance</h1>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-muted-foreground" />
-                  <Select 
-                    value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.semester}` : ''} 
-                    onValueChange={(value) => {
-                      const [year, semester] = value.split('-');
-                      const period = availablePeriods.find(p => p.year === year && p.semester === semester);
-                      if (period) setSelectedPeriod(period);
-                    }}
-                  >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Select academic period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePeriods.map((period) => (
-                        <SelectItem key={`${period.year}-${period.semester}`} value={`${period.year}-${period.semester}`}>
-                          {period.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-muted-foreground">Select a class to mark attendance</p>
-              </div>
+    <FacultyLayout>
+      {loadingPeriods ? (
+        <div className="flex items-center justify-center py-20 text-[#666]">Loading...</div>
+      ) : !selectedClass ? (
+        /* ── Class Selection ── */
+        <div>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-[#1a1a1a]">Mark Attendance</h1>
+              <p className="text-sm text-[#666] mt-0.5">Select a class to begin</p>
             </div>
-
-            {loadingClasses ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">Loading classes...</p>
-              </div>
-            ) : classes.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">No classes found</p>
-                <Link href="/faculty/timetable">
-                  <Button>Create Classes</Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {classes.map((classData) => (
-                  <Card 
-                    key={classData.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleClassSelect(classData)}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">
-                        {classData.subject_code} - {classData.subject_name}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                          {classData.department}-{classData.section}
-                        </Badge>
-                        {classData.is_lab && (
-                          <Badge variant="outline">Lab</Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {WEEKDAYS[classData.weekday - 1]}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {getPeriodLabel(classData.period_start, classData.period_end)}
-                      </div>
-                      {classData.room_number && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {classData.room_number}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          // Student Attendance View
-          <div>
-            <div className="flex items-center gap-4 mb-6">
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => {
-                  setSelectedClass(null);
-                  setStudents([]);
-                  setAttendance(new Map());
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-[#666]" />
+              <Select
+                value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.semester}` : ''}
+                onValueChange={(v) => {
+                  const [year, semester] = v.split('-');
+                  const p = availablePeriods.find(p => p.year === year && p.semester === semester);
+                  if (p) setSelectedPeriod(p);
                 }}
               >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  {selectedClass.subject_code} - {selectedClass.subject_name}
-                </h1>
-                <p className="text-muted-foreground">
-                  {selectedClass.department}-{selectedClass.section} • {WEEKDAYS[selectedClass.weekday - 1]} • {getPeriodLabel(selectedClass.period_start, selectedClass.period_end)}
-                </p>
-              </div>
+                <SelectTrigger className="w-[200px] h-10 bg-white border-[#e5e5e5] rounded-xl text-sm">
+                  <SelectValue placeholder="Academic period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePeriods.map((p) => (
+                    <SelectItem key={`${p.year}-${p.semester}`} value={`${p.year}-${p.semester}`}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            {loadingStudents ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">Loading students...</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Summary and Actions */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Total: {students.length}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-green-600">Present: {presentCount}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-red-600">Absent: {absentCount}</span>
-                        </div>
-                        {searchTerm && (
-                          <div className="text-sm text-muted-foreground">
-                            Showing: {filteredAndSortedStudents.length} filtered
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleMarkAll(true)}
-                        >
-                          Mark All Present
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleMarkAll(false)}
-                        >
-                          Mark All Absent
-                        </Button>
-                        <Button 
-                          onClick={handleSaveAttendance}
-                          disabled={savingAttendance}
-                          className="bg-[#141414] text-white hover:bg-[#141414]/90"
-                        >
-                          {savingAttendance ? 'Saving...' : 'Save Attendance'}
-                        </Button>
-                      </div>
+          {loadingClasses ? (
+            <div className="flex items-center justify-center py-20 text-[#666]">Loading classes...</div>
+          ) : classes.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-[#666] mb-4">No classes found</p>
+              <Link href="/faculty/timetable">
+                <Button className="bg-[#1a1a1a] text-white hover:bg-[#333] rounded-xl">Add Classes</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {classes.map((cls) => (
+                <button
+                  key={cls.id}
+                  onClick={() => handleClassSelect(cls)}
+                  className="text-left bg-white border border-[#e5e5e5] rounded-2xl p-5 hover:border-[#e05252]/40 hover:shadow-sm transition-all group"
+                >
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-[#e05252] mb-1">{cls.subject_code}</p>
+                    <p className="text-base font-semibold text-[#1a1a1a] leading-tight">{cls.subject_name}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <span className="text-[10px] font-bold bg-[#f2f0ed] text-[#666] px-2 py-0.5 rounded-full">
+                      {cls.department}-{cls.section}
+                    </span>
+                    {cls.is_lab && (
+                      <span className="text-[10px] font-bold bg-[#e05252]/10 text-[#e05252] px-2 py-0.5 rounded-full">Lab</span>
+                    )}
+                  </div>
+                  <div className="space-y-1 text-xs text-[#666]">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3" /> {WEEKDAYS[cls.weekday - 1]}
                     </div>
-
-                    {/* Search and Controls */}
-                    <div className="flex items-center gap-4">
-                      <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search by name or roll number..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                      <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10 per page</SelectItem>
-                          <SelectItem value="20">20 per page</SelectItem>
-                          <SelectItem value="50">50 per page</SelectItem>
-                          <SelectItem value="100">100 per page</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" /> {getPeriodLabel(cls.period_start, cls.period_end)}
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Students List */}
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Students ({filteredAndSortedStudents.length})</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('name')}
-                          className="flex items-center gap-2"
-                        >
-                          Name {getSortIcon('name')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('roll_number')}
-                          className="flex items-center gap-2"
-                        >
-                          Roll Number {getSortIcon('roll_number')}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {paginatedStudents.map((student) => (
-                        <div 
-                          key={student.roll_number}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Checkbox
-                              checked={attendance.get(student.roll_number) || false}
-                              onCheckedChange={(checked) => 
-                                handleAttendanceChange(student.roll_number, checked as boolean)
-                              }
-                            />
-                            <div>
-                              <p className="font-medium">{student.name}</p>
-                              <p className="text-sm text-muted-foreground">{student.roll_number}</p>
-                            </div>
-                          </div>
-                          <Badge 
-                            variant={attendance.get(student.roll_number) ? "default" : "destructive"}
-                          >
-                            {attendance.get(student.roll_number) ? "Present" : "Absent"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedStudents.length)} of {filteredAndSortedStudents.length} students
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(currentPage - 1)}
-                            disabled={currentPage === 1}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            Previous
-                          </Button>
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                              let pageNum;
-                              if (totalPages <= 5) {
-                                pageNum = i + 1;
-                              } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                              } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                              } else {
-                                pageNum = currentPage - 2 + i;
-                              }
-                              
-                              return (
-                                <Button
-                                  key={pageNum}
-                                  variant={currentPage === pageNum ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => setCurrentPage(pageNum)}
-                                  className="w-8 h-8 p-0"
-                                >
-                                  {pageNum}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                          >
-                            Next
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
+                    {cls.room_number && (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3" /> {cls.room_number}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Attendance Marking ── */
+        <div>
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-8">
+            <button
+              onClick={() => { setSelectedClass(null); setStudents([]); setAttendance(new Map()); }}
+              className="w-9 h-9 rounded-xl bg-white border border-[#e5e5e5] flex items-center justify-center hover:bg-[#f2f0ed] transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 text-[#666]" />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-[#1a1a1a]">
+                {selectedClass.subject_code} · {selectedClass.subject_name}
+              </h1>
+              <p className="text-sm text-[#666]">
+                {selectedClass.department}-{selectedClass.section} · {WEEKDAYS[selectedClass.weekday - 1]} · {getPeriodLabel(selectedClass.period_start, selectedClass.period_end)}
+              </p>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={savingAttendance || loadingStudents}
+              className="px-5 py-2 bg-[#1a1a1a] text-white text-sm font-semibold rounded-xl hover:bg-[#333] transition-colors disabled:opacity-50"
+            >
+              {savingAttendance ? 'Saving...' : 'Save Attendance'}
+            </button>
           </div>
-        )}
-      </main>
-    </div>
+
+          {loadingStudents ? (
+            <div className="flex items-center justify-center py-20 text-[#666]">Loading students...</div>
+          ) : (
+            <>
+              {/* Stats + Controls */}
+              <div className="flex items-center gap-4 mb-5 flex-wrap">
+                <div className="flex items-center gap-3 bg-white border border-[#e5e5e5] rounded-xl px-4 py-2.5">
+                  <span className="text-xs text-[#666]">Total</span>
+                  <span className="text-sm font-bold text-[#1a1a1a]">{students.length}</span>
+                  <div className="w-px h-4 bg-[#e5e5e5]" />
+                  <span className="text-xs text-emerald-600 font-semibold">P: {presentCount}</span>
+                  <div className="w-px h-4 bg-[#e5e5e5]" />
+                  <span className="text-xs text-red-500 font-semibold">A: {absentCount}</span>
+                </div>
+                <button
+                  onClick={() => markAll(true)}
+                  className="text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors border border-emerald-100"
+                >
+                  Mark All Present
+                </button>
+                <button
+                  onClick={() => markAll(false)}
+                  className="text-xs px-3 py-2 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors border border-red-100"
+                >
+                  Mark All Absent
+                </button>
+                <div className="ml-auto relative max-w-xs w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#666]/50" />
+                  <Input
+                    placeholder="Search by roll no or name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 h-10 bg-white border-[#e5e5e5] rounded-xl text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Student List */}
+              <div className="bg-white border border-[#e5e5e5] rounded-2xl overflow-hidden">
+                {filteredStudents.length === 0 ? (
+                  <div className="py-12 text-center text-sm text-[#666]">No students found</div>
+                ) : (
+                  <div className="divide-y divide-[#f2f0ed]">
+                    {filteredStudents.map((student) => {
+                      const isPresent = attendance.get(student.roll_number) ?? true;
+                      return (
+                        <div
+                          key={student.roll_number}
+                          className="flex items-center gap-4 px-5 py-3 hover:bg-[#f9f8f6] transition-colors"
+                        >
+                          {/* Roll number — prominent */}
+                          <span className="w-28 text-sm font-bold text-[#1a1a1a] shrink-0 font-mono">
+                            {student.roll_number}
+                          </span>
+                          {/* Name */}
+                          <span className="flex-1 text-sm text-[#666] truncate">{student.name}</span>
+                          {/* Toggle */}
+                          <button
+                            onClick={() => toggle(student.roll_number)}
+                            className={`w-20 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                              isPresent
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100'
+                                : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
+                            }`}
+                          >
+                            {isPresent ? 'Present' : 'Absent'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </FacultyLayout>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CalendarDays, ExternalLink, ImagePlus, Megaphone } from 'lucide-react';
 
@@ -9,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ANNOUNCEMENT_CLUBS, type AnnouncementClub, type AnnouncementRecord } from '@/lib/announcements';
 import { supabase } from '@/lib/supabase';
 
-import DashboardHeader from '@/components/layout/DashboardHeader';
+import FacultyLayout from '@/components/layout/FacultyLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -173,43 +172,8 @@ export default function FacultyAnnouncementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        tabs={
-          <div className="flex items-center gap-2">
-            <Link href="/faculty">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/faculty/timetable">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Timetable
-              </Button>
-            </Link>
-            <Link href="/faculty/attendance">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Attendance
-              </Button>
-            </Link>
-            <Link href="/faculty/grades">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Grades
-              </Button>
-            </Link>
-            <Link href="/faculty/assignments">
-              <Button variant="ghost" className="rounded-full px-4 py-2 h-auto hover:bg-secondary text-foreground">
-                Assignments
-              </Button>
-            </Link>
-            <Button variant="ghost" className="rounded-full px-4 py-2 h-auto bg-[#141414] text-white hover:bg-[#141414]/90">
-              Announcements
-            </Button>
-          </div>
-        }
-      />
-
-      <main className="p-6 max-w-7xl mx-auto space-y-6">
+    <FacultyLayout>
+      <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Announcements</h1>
@@ -366,7 +330,7 @@ export default function FacultyAnnouncementsPage() {
             ) : null}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </FacultyLayout>
   );
 }

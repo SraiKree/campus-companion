@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import Providers from './providers';
 import { ToasterWrapper } from '@/components/toaster-wrapper';
 
@@ -28,8 +29,10 @@ export default function RootLayout({
         <Providers>
           <TooltipProvider>
             <AuthProvider>
-              {children}
-              <ToasterWrapper />
+              <ThemeProvider>
+                {children}
+                <ToasterWrapper />
+              </ThemeProvider>
             </AuthProvider>
           </TooltipProvider>
         </Providers>

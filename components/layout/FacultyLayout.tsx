@@ -2,35 +2,39 @@
 
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Search, Home, BookOpen, Calendar, Users, Sun, Moon
+  Search, Home, Calendar, Clock,
+  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Input } from '@/components/ui/input';
 import NotificationPanel from '@/components/NotificationPanel';
 
-interface StudentLayoutProps {
+interface FacultyLayoutProps {
   children: ReactNode;
 }
 
-const StudentLayout = ({ children }: StudentLayoutProps) => {
-  const { user } = useAuth();
+const FacultyLayout = ({ children }: FacultyLayoutProps) => {
+  const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/student', label: 'Dashboard', icon: Home },
-    { href: '/student/courses', label: 'Courses', icon: BookOpen },
-    { href: '/student/attendance', label: 'Attendance', icon: Calendar },
-    { href: '/student/announcements', label: 'Announcements', icon: Users },
+    { href: '/faculty', label: 'Dashboard', icon: Home },
+    { href: '/faculty/attendance', label: 'Attendance', icon: Calendar },
+    { href: '/faculty/timetable', label: 'Timetable', icon: Clock },
+    { href: '/faculty/grades', label: 'Grades', icon: BookOpen },
+    { href: '/faculty/assignments', label: 'Assignments', icon: FileText },
+    { href: '/faculty/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/faculty/profile', label: 'Profile', icon: UserCircle },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/student') return pathname === href;
+    if (href === '/faculty') return pathname === href;
     return pathname?.startsWith(href);
   };
 
@@ -39,7 +43,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
       className={`ch-themed min-h-screen flex${isDark ? ' dark' : ''}`}
       style={{ backgroundColor: 'var(--ch-bg)' }}
     >
-      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      {/* Sidebar */}
       <aside
         className="fixed left-0 top-0 h-screen w-[288px] flex flex-col p-6 z-20 border-r"
         style={{
@@ -67,7 +71,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: 'var(--ch-muted)' }}
               >
-                Student Portal
+                Faculty Portal
               </p>
             </div>
           </div>
@@ -81,7 +85,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
             return (
               <Link key={item.href} href={item.href}>
                 <div
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl transition-colors cursor-pointer"
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer"
                   style={{
                     backgroundColor: active ? 'var(--ch-nav-active)' : 'transparent',
                     border: active ? '1px solid var(--ch-border)' : '1px solid transparent',
@@ -121,8 +125,11 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src="/placeholder-avatar.png" />
-              <AvatarFallback style={{ backgroundColor: 'var(--ch-accent)' }} className="text-white">
-                {user?.name?.charAt(0) || 'A'}
+              <AvatarFallback
+                className="text-white"
+                style={{ backgroundColor: 'var(--ch-accent)' }}
+              >
+                {user?.name?.charAt(0) || 'F'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
@@ -130,29 +137,28 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 className="text-sm font-bold truncate"
                 style={{ color: 'var(--ch-text)' }}
               >
-                {user?.name || 'Student'}
+                {user?.name || 'Faculty'}
               </p>
               <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>
-                ID: #{user?.id || '000000'}
+                {user?.email || 'faculty@campus.edu'}
               </p>
             </div>
           </div>
-          <Link href="/api/auth/logout">
-            <Button
-              variant="ghost"
-              className="w-full text-xs font-bold h-8"
-              style={{
-                backgroundColor: 'var(--ch-muted-bg)',
-                color: 'var(--ch-text)',
-              }}
-            >
-              LOGOUT
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            className="w-full text-xs font-bold h-8"
+            style={{
+              backgroundColor: 'var(--ch-muted-bg)',
+              color: 'var(--ch-text)',
+            }}
+            onClick={logout}
+          >
+            LOGOUT
+          </Button>
         </div>
       </aside>
 
-      {/* ── Main Content ────────────────────────────────────────────────── */}
+      {/* Main Content */}
       <div className="flex-1 ml-[288px]">
         {/* Header */}
         <header
@@ -163,7 +169,6 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
           }}
         >
           <div className="h-full px-10 flex items-center justify-between">
-            {/* Search */}
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search
@@ -171,7 +176,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                   style={{ color: 'var(--ch-muted)', opacity: 0.5 }}
                 />
                 <Input
-                  placeholder="Search courses, faculty, or events..."
+                  placeholder="Search students, classes, or subjects..."
                   className="pl-11 pr-4 h-11 rounded-full text-sm border"
                   style={{
                     backgroundColor: 'var(--ch-card)',
@@ -181,18 +186,14 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 />
               </div>
             </div>
-
-            {/* Right controls */}
             <div className="flex items-center gap-3">
-              {/* Notifications */}
               <NotificationPanel />
-
               <div className="w-px h-8" style={{ backgroundColor: 'var(--ch-border)' }} />
 
               {/* Dark mode toggle */}
               <button
                 onClick={toggleTheme}
-                className="no-transition w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
+                className="no-transition w-10 h-10 rounded-full flex items-center justify-center border"
                 style={{
                   backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
                   borderColor: 'var(--ch-border)',
@@ -200,39 +201,30 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 }}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
-                {isDark
-                  ? <Sun className="w-4 h-4" />
-                  : <Moon className="w-4 h-4" />
-                }
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
 
-              {/* Profile */}
-              <Link href="/student/profile">
-                <Button
-                  variant="ghost"
-                  className="h-10 px-3 rounded-full gap-2 border"
-                  style={{
-                    backgroundColor: 'var(--ch-card)',
-                    borderColor: 'var(--ch-border)',
-                  }}
-                >
-                  <Avatar className="w-7 h-7">
-                    <AvatarImage src="/placeholder-avatar.png" />
-                    <AvatarFallback
-                      className="text-white text-xs"
-                      style={{ backgroundColor: 'var(--ch-accent)' }}
-                    >
-                      {user?.name?.charAt(0) || 'A'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span
-                    className="text-xs font-bold"
-                    style={{ color: 'var(--ch-text)' }}
+              <Button
+                variant="ghost"
+                className="h-10 px-3 rounded-full gap-2 border"
+                style={{
+                  backgroundColor: 'var(--ch-card)',
+                  borderColor: 'var(--ch-border)',
+                }}
+              >
+                <Avatar className="w-7 h-7">
+                  <AvatarImage src="/placeholder-avatar.png" />
+                  <AvatarFallback
+                    className="text-white text-xs"
+                    style={{ backgroundColor: 'var(--ch-accent)' }}
                   >
-                    {user?.name?.split(' ')[0]?.toUpperCase() || 'STUDENT'}
-                  </span>
-                </Button>
-              </Link>
+                    {user?.name?.charAt(0) || 'F'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-bold" style={{ color: 'var(--ch-text)' }}>
+                  {user?.name?.split(' ')[0]?.toUpperCase() || 'FACULTY'}
+                </span>
+              </Button>
             </div>
           </div>
         </header>
@@ -246,4 +238,4 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
   );
 };
 
-export default StudentLayout;
+export default FacultyLayout;
