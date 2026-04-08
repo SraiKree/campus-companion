@@ -8,10 +8,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
-import { 
-  User, Mail, Hash, Building2, Calendar, 
-  BookOpen, GraduationCap, MapPin
+import {
+  User, Mail, Hash, Building2, Calendar,
+  BookOpen, GraduationCap, MapPin, FileText,
+  Shield, Phone, ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProfileData {
   profile: {
@@ -35,10 +37,35 @@ interface ProfileData {
   authEmail: string;
 }
 
+interface ExtendedDetails {
+  full_name: string;
+  gender: string;
+  department: string;
+  nature_of_work: string;
+  designation: string;
+  date_of_birth: string;
+  father_name: string;
+  mother_name: string;
+  religion: string;
+  caste: string;
+  category: string;
+  category_telangana: string;
+  special_category: string;
+  permanent_address: string;
+  communication_address: string;
+  mobile_no: string;
+  email_address: string;
+  pan_no: string;
+  aadhar_no: string;
+  apaar_id: string | null;
+  abha_no: string;
+}
+
 export default function StudentProfilePage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [extendedDetails, setExtendedDetails] = useState<ExtendedDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,16 +90,22 @@ export default function StudentProfilePage() {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
 
-      const res = await fetch('/api/student/profile', {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      const [profileRes, detailsRes] = await Promise.all([
+        fetch('/api/student/profile', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }),
+        fetch('/api/student/details', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }),
+      ]);
 
-      if (!res.ok) {
-        throw new Error('Failed to load profile');
+      if (profileRes.ok) {
+        setProfileData(await profileRes.json());
       }
-
-      const data = await res.json();
-      setProfileData(data);
+      if (detailsRes.ok) {
+        const { details } = await detailsRes.json();
+        setExtendedDetails(details);
+      }
     } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
@@ -270,6 +303,144 @@ export default function StudentProfilePage() {
             </div>
           </div>
         </Card>
+
+        {/* Extended Details Section */}
+        {!extendedDetails ? (
+          <Card className="border-[#e5e5e5] bg-white rounded-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#e05252]/5 to-[#c44545]/5 px-6 py-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-[#e05252]/10 flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-7 h-7 text-[#e05252]" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1a1a1a] mb-1">Complete Your Profile</h3>
+              <p className="text-sm text-[#666] mb-5 max-w-md mx-auto">
+                You haven't filled in your detailed information yet. Complete all required fields to keep your profile up to date.
+              </p>
+              <Link href="/student/details">
+                <button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#e05252] text-white text-sm font-bold hover:bg-[#c44545] transition-colors shadow-md shadow-[#e05252]/20">
+                  Fill Details <ChevronRight className="w-4 h-4" />
+                </button>
+              </Link>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {/* Edit button */}
+            <div className="flex justify-end">
+              <Link href="/student/details">
+                <button className="text-xs font-bold text-[#e05252] hover:underline">
+                  Edit Details
+                </button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {/* Family Details */}
+              <Card className="border-[#e5e5e5] bg-white rounded-2xl p-6">
+                <h2 className="text-lg font-bold text-[#1a1a1a] mb-6 flex items-center gap-2">
+                  <User className="w-5 h-5 text-[#c44545]" />
+                  Family Details
+                </h2>
+                <div className="space-y-4">
+                  {[
+                    { icon: User, label: "Father's Name", value: extendedDetails.father_name },
+                    { icon: User, label: "Mother's Name", value: extendedDetails.mother_name },
+                    { icon: BookOpen, label: 'Religion', value: extendedDetails.religion },
+                    { icon: Hash, label: 'Caste', value: extendedDetails.caste },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#f2f0ed] flex items-center justify-center flex-shrink-0">
+                        <item.icon className="w-5 h-5 text-[#666]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-1">{item.label}</p>
+                        <p className="text-sm font-medium text-[#1a1a1a]">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Category Details */}
+              <Card className="border-[#e5e5e5] bg-white rounded-2xl p-6">
+                <h2 className="text-lg font-bold text-[#1a1a1a] mb-6 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-[#c44545]" />
+                  Category Details
+                </h2>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Category', value: extendedDetails.category },
+                    { label: 'Category (Telangana)', value: extendedDetails.category_telangana },
+                    { label: 'Special Category', value: extendedDetails.special_category },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#f2f0ed] flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-5 h-5 text-[#666]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-1">{item.label}</p>
+                        <p className="text-sm font-medium text-[#1a1a1a]">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            {/* Contact Details */}
+            <Card className="border-[#e5e5e5] bg-white rounded-2xl p-6">
+              <h2 className="text-lg font-bold text-[#1a1a1a] mb-6 flex items-center gap-2">
+                <Phone className="w-5 h-5 text-[#c44545]" />
+                Contact Details
+              </h2>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">Permanent Address</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] whitespace-pre-line">{extendedDetails.permanent_address}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">Communication Address</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] whitespace-pre-line">{extendedDetails.communication_address}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">Mobile No.</p>
+                  <p className="text-sm font-medium text-[#1a1a1a]">{extendedDetails.mobile_no}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">Email Address</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] break-all">{extendedDetails.email_address}</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* ID Documents */}
+            <Card className="border-[#e5e5e5] bg-white rounded-2xl p-6">
+              <h2 className="text-lg font-bold text-[#1a1a1a] mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#c44545]" />
+                ID Documents
+              </h2>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">PAN No.</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] font-mono">{extendedDetails.pan_no}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">Aadhar No.</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] font-mono">{extendedDetails.aadhar_no}</p>
+                </div>
+                {extendedDetails.apaar_id && (
+                  <div>
+                    <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">APAAR ID</p>
+                    <p className="text-sm font-medium text-[#1a1a1a] font-mono">{extendedDetails.apaar_id}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-bold text-[#666] uppercase tracking-wider mb-2">ABHA No.</p>
+                  <p className="text-sm font-medium text-[#1a1a1a] font-mono">{extendedDetails.abha_no}</p>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </StudentLayout>
   );
