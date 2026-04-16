@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Search, Home, BookOpen, Calendar, Users, Sun, Moon
+  Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -18,7 +18,7 @@ interface StudentLayoutProps {
 }
 
 const StudentLayout = ({ children }: StudentLayoutProps) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const pathname = usePathname();
 
@@ -27,6 +27,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
     { href: '/student/courses', label: 'Courses', icon: BookOpen },
     { href: '/student/attendance', label: 'Attendance', icon: Calendar },
     { href: '/student/announcements', label: 'Announcements', icon: Users },
+    { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
   ];
 
   const isActive = (href: string) => {
@@ -137,18 +138,17 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
               </p>
             </div>
           </div>
-          <Link href="/api/auth/logout">
-            <Button
-              variant="ghost"
-              className="w-full text-xs font-bold h-8"
-              style={{
-                backgroundColor: 'var(--ch-muted-bg)',
-                color: 'var(--ch-text)',
-              }}
-            >
-              LOGOUT
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            className="w-full text-xs font-bold h-8"
+            style={{
+              backgroundColor: 'var(--ch-muted-bg)',
+              color: 'var(--ch-text)',
+            }}
+            onClick={logout}
+          >
+            LOGOUT
+          </Button>
         </div>
       </aside>
 
