@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Search, Home, BookOpen, Calendar, Users, Sun, Moon, Send, MessageSquare
+  Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus, Send, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -27,6 +27,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
     { href: '/student/courses', label: 'Courses', icon: BookOpen },
     { href: '/student/attendance', label: 'Attendance', icon: Calendar },
     { href: '/student/announcements', label: 'Announcements', icon: Users },
+    { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
     { href: '/student/requests', label: 'Raise Request', icon: Send },
     { href: '/student/feedback', label: 'Faculty Feedback', icon: MessageSquare },
   ];

@@ -5,8 +5,8 @@ import { ANNOUNCEMENT_CLUBS } from '@/lib/announcements';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const storageClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aikpzlzcqqwtlqfxlcer.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_vhhr6-GY43cX64B9WnWYUQ_X67z87tG'
 );
 
 async function authenticateFaculty(request: NextRequest) {

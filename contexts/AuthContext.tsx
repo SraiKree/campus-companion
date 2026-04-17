@@ -117,25 +117,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: data.error || 'Login failed' };
       }
 
-      // Use credentials to sign in with Supabase
-      if (data.credentials) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.credentials.email,
-          password: data.credentials.password
+      if (!data.credentials) {
+        return { success: false, error: 'No authentication credentials received' };
+      }
+
+      const { email, password: authPassword } = data.credentials;
+
+      // Try signing in first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: authPassword
+      });
+
+      if (signInError) {
+        // User doesn't exist in Supabase Auth yet — sign them up
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: authPassword,
+          options: {
+            data: {
+              name: data.user?.name,
+              roll_no: data.user?.roll_no,
+              role: 'student'
+            }
+          }
         });
 
-        if (signInError) {
-          console.error('Supabase sign in error:', signInError);
+        if (signUpError) {
+          console.error('Supabase sign up error:', signUpError);
+          return { success: false, error: 'Failed to create account' };
+        }
+
+        // Sign in after successful sign-up
+        const { error: retryError } = await supabase.auth.signInWithPassword({
+          email,
+          password: authPassword
+        });
+
+        if (retryError) {
+          console.error('Supabase sign in after sign up error:', retryError);
           return { success: false, error: 'Failed to establish session' };
         }
-        
-        // Store complete user data from login response
-        if (data.user) {
-          storeUserData(data.user);
-        }
-      } else {
-        console.error('No credentials received from login API');
-        return { success: false, error: 'No authentication credentials received' };
+      }
+
+      // Store complete user data from login response
+      if (data.user) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        storeUserData({ ...data.user, id: authUser?.id || data.user.id });
       }
 
       return { success: true };

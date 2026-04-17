@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { UserRole } from '@/types/erp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GraduationCap, BookOpen, AlertCircle, User, Shield, Building2, Home } from 'lucide-react';
-import { STAFF_ROLES, ROLE_LABELS, getDashboardPath } from '@/utils/roles';
+import { GraduationCap, BookOpen, AlertCircle, User, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { STAFF_ROLES, ROLE_LABELS } from '@/utils/roles';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +21,9 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, loginWithRollNumber, signup } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,14 +45,12 @@ const Login = () => {
       let success = false;
 
       if (loginMode === 'student') {
-        // Use roll number login for students
         const result = await loginWithRollNumber(rollNumber, password);
         success = result.success;
         if (!success) {
           setError(result.error || 'Invalid roll number or password');
         }
       } else {
-        // Use email login for all staff roles — pass the selected role
         success = await login(email, password, role);
         if (!success) {
           setError('Invalid email or password. Please check your credentials and try again.');
@@ -59,139 +58,236 @@ const Login = () => {
       }
 
       setLoading(false);
-      // Navigation will be handled by the page component via AuthContext
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md animate-fade-in">
+    <div
+      className={`ch-themed min-h-screen flex flex-col items-center justify-center p-4 relative${isDark ? ' dark' : ''}`}
+      style={{ backgroundColor: 'var(--ch-bg)' }}
+    >
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="no-transition absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
+        style={{
+          backgroundColor: 'var(--ch-card)',
+          borderColor: 'var(--ch-border)',
+          color: isDark ? '#ff8d89' : '#e05252',
+        }}
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      </button>
+
+      <div className="w-full max-w-[420px] animate-fade-in">
+        {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#141414] mb-4">
+          <div
+            className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
+            style={{ backgroundColor: 'var(--ch-accent)' }}
+          >
             <GraduationCap className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">CampusHub</h1>
-          <p className="text-muted-foreground mt-1">College ERP System</p>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--ch-text)' }}>
+            CampusHub
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--ch-muted)' }}>
+            College ERP System
+          </p>
         </div>
 
-        <Card className="shadow-elevated border-border rounded-2xl">
-          <CardHeader className="pb-4">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={loginMode === 'student' ? 'default' : 'ghost'}
-                className={`flex-1 rounded-full gap-2 ${loginMode === 'student' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
-                onClick={() => { setLoginMode('student'); setRole('student'); setError(''); }}
-              >
-                <User className="h-4 w-4" /> Student
-              </Button>
-              <Button
-                type="button"
-                variant={loginMode === 'staff' ? 'default' : 'ghost'}
-                className={`flex-1 rounded-full gap-2 ${loginMode === 'staff' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
-                onClick={() => { setLoginMode('staff'); setRole('faculty'); setError(''); }}
-              >
-                <BookOpen className="h-4 w-4" /> Staff
-              </Button>
+        {/* Card */}
+        <div
+          className="rounded-2xl border p-6 shadow-elevated"
+          style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
+        >
+          {/* Login Mode Toggle */}
+          <div
+            className="flex gap-1.5 p-1.5 rounded-xl mb-4"
+            style={{ backgroundColor: 'var(--ch-muted-bg)' }}
+          >
+            <button
+              type="button"
+              onClick={() => { setLoginMode('student'); setRole('student'); setError(''); }}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all"
+              style={{
+                backgroundColor: loginMode === 'student' ? 'var(--ch-card)' : 'transparent',
+                color: loginMode === 'student' ? 'var(--ch-accent)' : 'var(--ch-muted)',
+                boxShadow: loginMode === 'student' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              <User className="h-4 w-4" /> Student
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode('staff'); setRole('faculty'); setError(''); }}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all"
+              style={{
+                backgroundColor: loginMode === 'staff' ? 'var(--ch-card)' : 'transparent',
+                color: loginMode === 'staff' ? 'var(--ch-accent)' : 'var(--ch-muted)',
+                boxShadow: loginMode === 'staff' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              <BookOpen className="h-4 w-4" /> Staff
+            </button>
+          </div>
+
+          {/* Staff Role Selector */}
+          {loginMode === 'staff' && (
+            <div className="mb-4">
+              <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                <SelectTrigger className="rounded-lg">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAFF_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {loginMode === 'staff' && (
-              <div className="mt-3">
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger className="rounded-lg">
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STAFF_ROLES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {ROLE_LABELS[r]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Error */}
+            {error && (
+              <div
+                className="flex items-start gap-2.5 text-sm p-3.5 rounded-xl"
+                style={{ backgroundColor: 'rgba(224,82,82,0.08)', color: 'var(--ch-accent)' }}
+              >
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-              {isSignup && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="rounded-lg"
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor={loginMode === 'student' ? 'rollNumber' : 'email'}>
-                  {loginMode === 'student' ? 'Roll Number' : 'Email'}
-                </Label>
-                {loginMode === 'student' ? (
-                  <Input
-                    id="rollNumber"
-                    type="text"
-                    placeholder="Enter your roll number (e.g., 23R21A1285)"
-                    value={rollNumber}
-                    onChange={(e) => {
-                      setRollNumber(e.target.value);
-                      // Auto-fill password with roll number for students
-                      setPassword(e.target.value);
-                    }}
-                    required
-                    className="rounded-lg"
-                  />
-                ) : (
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="rounded-lg"
-                  />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+
+            {/* Signup: Name */}
+            {isSignup && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
+                  Full Name
+                </label>
                 <Input
-                  id="password"
-                  type="password"
-                  placeholder={loginMode === 'student' ? 'Enter your roll number as password' : 'Enter your password'}
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-11 rounded-xl border"
+                  style={{
+                    backgroundColor: 'var(--ch-input)',
+                    borderColor: 'var(--ch-border)',
+                    color: 'var(--ch-text)',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Roll Number / Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
+                {loginMode === 'student' ? 'Roll Number' : 'Email'}
+              </label>
+              {loginMode === 'student' ? (
+                <Input
+                  type="text"
+                  placeholder="e.g., 23R21A1285"
+                  value={rollNumber}
+                  onChange={(e) => {
+                    setRollNumber(e.target.value);
+                    setPassword(e.target.value);
+                  }}
+                  required
+                  className="h-11 rounded-xl border"
+                  style={{
+                    backgroundColor: 'var(--ch-input)',
+                    borderColor: 'var(--ch-border)',
+                    color: 'var(--ch-text)',
+                  }}
+                />
+              ) : (
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-11 rounded-xl border"
+                  style={{
+                    backgroundColor: 'var(--ch-input)',
+                    borderColor: 'var(--ch-border)',
+                    color: 'var(--ch-text)',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={loginMode === 'student' ? 'Your roll number is your password' : 'Enter your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="rounded-lg"
+                  className="h-11 rounded-xl border pr-10"
+                  style={{
+                    backgroundColor: 'var(--ch-input)',
+                    borderColor: 'var(--ch-border)',
+                    color: 'var(--ch-text)',
+                  }}
                 />
-                {loginMode === 'student' && !isSignup && (
-                  <p className="text-xs text-muted-foreground">
-                    Use your roll number as both username and password
-                  </p>
-                )}
-              </div>
-              <Button type="submit" className="w-full bg-[#141414] text-white hover:bg-[#141414]/90 rounded-lg" disabled={loading}>
-                {loading ? (isSignup ? 'Creating Account...' : 'Signing in...') : (isSignup ? 'Create Account' : 'Sign In')}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                <button type="button" className="text-[#141414] hover:underline font-medium" onClick={() => { setIsSignup(!isSignup); setError(''); }}>
-                  {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: 'var(--ch-muted)' }}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+              </div>
+              {loginMode === 'student' && !isSignup && (
+                <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>
+                  Use your roll number as both username and password
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 rounded-xl text-sm font-semibold text-white"
+              style={{ backgroundColor: 'var(--ch-accent)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+            >
+              {loading
+                ? (isSignup ? 'Creating Account...' : 'Signing in...')
+                : (isSignup ? 'Create Account' : 'Sign In')}
+            </Button>
+
+            {/* Toggle Sign In / Sign Up */}
+            <p className="text-xs text-center pt-1" style={{ color: 'var(--ch-muted)' }}>
+              <button
+                type="button"
+                className="font-medium hover:underline"
+                style={{ color: 'var(--ch-accent)' }}
+                onClick={() => { setIsSignup(!isSignup); setError(''); }}
+              >
+                {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              </button>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
