@@ -30,13 +30,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: roleData, error: roleError } = await supabase
+  const roleFromMetadata = (user.user_metadata as Record<string, unknown>)?.role;
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', user.id)
     .single();
 
-  if (roleError || !roleData || roleData.role !== 'student') {
+  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
+  if (role !== 'student') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

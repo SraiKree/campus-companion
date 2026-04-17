@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Search, Home, Calendar, Clock,
+  Search, Home, Calendar, Clock, CalendarDays,
   BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,7 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
     { href: '/faculty', label: 'Dashboard', icon: Home },
     { href: '/faculty/attendance', label: 'Attendance', icon: Calendar },
     { href: '/faculty/timetable', label: 'Timetable', icon: Clock },
+    { href: '/faculty/academic-planning', label: 'Academic Planning', icon: CalendarDays },
     { href: '/faculty/grades', label: 'Grades', icon: BookOpen },
     { href: '/faculty/assignments', label: 'Assignments', icon: FileText },
     { href: '/faculty/announcements', label: 'Announcements', icon: Megaphone },
