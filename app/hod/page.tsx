@@ -1,10 +1,11 @@
 'use client';
 
 import { useRoleProtection } from '@/hooks/useRoleProtection';
-import FacultyDashboard from '@/components/pages/FacultyDashboard';
+import HodLayout from '@/components/layout/HodLayout';
+import HodDashboard from '@/components/pages/hod/HodDashboard';
 
-export default function FacultyPage() {
-  const { loading, authorized } = useRoleProtection('faculty');
+export default function HodPage() {
+  const { loading, authorized } = useRoleProtection('hod');
 
   if (loading) {
     return (
@@ -16,5 +17,9 @@ export default function FacultyPage() {
 
   if (!authorized) return null;
 
-  return <FacultyDashboard />;
+  return (
+    <HodLayout>
+      <HodDashboard />
+    </HodLayout>
+  );
 }

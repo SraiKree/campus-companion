@@ -3,10 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User as AppUser, UserRole } from '@/types/erp';
+import { isValidRole } from '@/utils/roles';
 
 interface AuthContextType {
   user: AppUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, selectedRole?: UserRole) => Promise<boolean>;
   loginWithRollNumber: (rollNumber: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -144,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string, selectedRole?: UserRole): Promise<boolean> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.error('Login error:', error.message, error);
@@ -157,21 +158,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
-      // Determine role from metadata first, then fallback to user_roles table
-      const roleFromMetadata = (authUser.user_metadata as any)?.role;
-      let role: UserRole = 'student';
+      // Use the role selected at login if provided, otherwise determine from DB
+      let role: UserRole = selectedRole || 'faculty';
 
-      if (typeof roleFromMetadata === 'string' && (roleFromMetadata === 'student' || roleFromMetadata === 'faculty')) {
-        role = roleFromMetadata as UserRole;
-      } else {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', authUser.id)
-          .single();
+      if (!selectedRole) {
+        const roleFromMetadata = (authUser.user_metadata as any)?.role;
+        if (typeof roleFromMetadata === 'string' && isValidRole(roleFromMetadata)) {
+          role = roleFromMetadata;
+        } else {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', authUser.id)
+            .single();
 
-        if (roleData?.role === 'faculty') {
-          role = 'faculty';
+          if (roleData?.role && isValidRole(roleData.role)) {
+            role = roleData.role;
+          }
         }
       }
 
@@ -216,13 +219,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Clear stored data and sign out
+    // Clear stored data first
     clearUserData();
-    await supabase.auth.signOut();
-    
-    // Redirect to home page
+
+    // Sign out from Supabase — wrap in try/catch so redirect always runs
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Supabase sign out error:', error);
+    }
+
+    // Hard redirect to login — use replace so the user can't "back" into a stale dashboard
     if (typeof window !== 'undefined') {
-      window.location.href = '/';
+      window.location.replace('/');
     }
   }, [user]);
 

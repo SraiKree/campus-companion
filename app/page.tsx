@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDashboardPath } from '@/utils/roles';
 import Login from '@/components/pages/Login';
 
 export default function Home() {
@@ -11,11 +12,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
-      if (user.role === 'faculty') {
-        router.push('/faculty');
-      } else {
-        router.push('/student');
-      }
+      router.push(getDashboardPath(user.role));
     }
   }, [loading, isAuthenticated, user, router]);
 

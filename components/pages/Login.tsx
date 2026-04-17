@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { GraduationCap, BookOpen, AlertCircle, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GraduationCap, BookOpen, AlertCircle, User, Shield, Building2, Home } from 'lucide-react';
+import { STAFF_ROLES, ROLE_LABELS, getDashboardPath } from '@/utils/roles';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loginMode, setLoginMode] = useState<'student' | 'staff'>('student');
   const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,8 +42,8 @@ const Login = () => {
       }
     } else {
       let success = false;
-      
-      if (role === 'student') {
+
+      if (loginMode === 'student') {
         // Use roll number login for students
         const result = await loginWithRollNumber(rollNumber, password);
         success = result.success;
@@ -48,15 +51,15 @@ const Login = () => {
           setError(result.error || 'Invalid roll number or password');
         }
       } else {
-        // Use email login for faculty
-        success = await login(email, password);
+        // Use email login for all staff roles — pass the selected role
+        success = await login(email, password, role);
         if (!success) {
           setError('Invalid email or password. Please check your credentials and try again.');
         }
       }
-      
+
       setLoading(false);
-      // Navigation will be handled by the page component
+      // Navigation will be handled by the page component via AuthContext
     }
   };
 
@@ -76,21 +79,37 @@ const Login = () => {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant={role === 'student' ? 'default' : 'ghost'}
-                className={`flex-1 rounded-full gap-2 ${role === 'student' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
-                onClick={() => { setRole('student'); setError(''); }}
+                variant={loginMode === 'student' ? 'default' : 'ghost'}
+                className={`flex-1 rounded-full gap-2 ${loginMode === 'student' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
+                onClick={() => { setLoginMode('student'); setRole('student'); setError(''); }}
               >
                 <User className="h-4 w-4" /> Student
               </Button>
               <Button
                 type="button"
-                variant={role === 'faculty' ? 'default' : 'ghost'}
-                className={`flex-1 rounded-full gap-2 ${role === 'faculty' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
-                onClick={() => { setRole('faculty'); setError(''); }}
+                variant={loginMode === 'staff' ? 'default' : 'ghost'}
+                className={`flex-1 rounded-full gap-2 ${loginMode === 'staff' ? 'bg-[#141414] text-white hover:bg-[#141414]/90' : 'hover:bg-secondary'}`}
+                onClick={() => { setLoginMode('staff'); setRole('faculty'); setError(''); }}
               >
-                <BookOpen className="h-4 w-4" /> Faculty
+                <BookOpen className="h-4 w-4" /> Staff
               </Button>
             </div>
+            {loginMode === 'staff' && (
+              <div className="mt-3">
+                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STAFF_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,10 +134,10 @@ const Login = () => {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor={role === 'student' ? 'rollNumber' : 'email'}>
-                  {role === 'student' ? 'Roll Number' : 'Email'}
+                <Label htmlFor={loginMode === 'student' ? 'rollNumber' : 'email'}>
+                  {loginMode === 'student' ? 'Roll Number' : 'Email'}
                 </Label>
-                {role === 'student' ? (
+                {loginMode === 'student' ? (
                   <Input
                     id="rollNumber"
                     type="text"
@@ -149,14 +168,14 @@ const Login = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder={role === 'student' ? 'Enter your roll number as password' : 'Enter your password'}
+                  placeholder={loginMode === 'student' ? 'Enter your roll number as password' : 'Enter your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
                   className="rounded-lg"
                 />
-                {role === 'student' && !isSignup && (
+                {loginMode === 'student' && !isSignup && (
                   <p className="text-xs text-muted-foreground">
                     Use your roll number as both username and password
                   </p>
