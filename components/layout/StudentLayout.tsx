@@ -83,8 +83,8 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1">
+        {/* Navigation — scrolls if nav items overflow vertically */}
+        <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1 -mr-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);

@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+// NOTE: this screen currently renders MOCK data so it can be previewed
+// without the hostel-admin backend being ready. To switch to the real
+// API later: replace MOCK_ACTIVE / MOCK_LEFT with fetches to
+// /api/hostel/admin/students and /api/hostel/admin/left (bearer token
+// from supabase.auth.getSession()), and re-enable the role guard.
+
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Building2,
@@ -17,118 +23,97 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { supabase } from '@/lib/supabase';
-import type { HostelAdminStudentRow, HostelLeftStudentRow } from '@/lib/hostel';
+
+// ────────────────────────────────────────────────────────────────
+// Mock data
+// ────────────────────────────────────────────────────────────────
+
+interface ActiveStudent {
+  name: string;
+  roll_number: string;
+  room_no: string;
+  block: string;
+}
+
+interface LeftStudent {
+  name: string;
+  roll_number: string;
+  previous_room: string;
+  status: 'Left';
+}
+
+const MOCK_ACTIVE: ActiveStudent[] = [
+  { name: 'Aarav Sharma',       roll_number: '24R01A0501', room_no: '101', block: 'A' },
+  { name: 'Bhavya Reddy',       roll_number: '24R01A0502', room_no: '101', block: 'A' },
+  { name: 'Chirag Menon',       roll_number: '24R01A0503', room_no: '102', block: 'A' },
+  { name: 'Diya Patel',         roll_number: '24R01A0504', room_no: '103', block: 'A' },
+  { name: 'Eshaan Kapoor',      roll_number: '24R01A0505', room_no: '201', block: 'B' },
+  { name: 'Farhan Iqbal',       roll_number: '24R01A0506', room_no: '201', block: 'B' },
+  { name: 'Gauri Nair',         roll_number: '24R01A0507', room_no: '202', block: 'B' },
+  { name: 'Harsha Vardhan',     roll_number: '24R01A0508', room_no: '203', block: 'B' },
+];
+
+const MOCK_LEFT: LeftStudent[] = [
+  { name: 'Isha Raghavan',      roll_number: '23R01A0431', previous_room: '104 / A', status: 'Left' },
+  { name: 'Jatin Bose',         roll_number: '23R01A0432', previous_room: '204 / B', status: 'Left' },
+  { name: 'Karthik Iyer',       roll_number: '23R01A0433', previous_room: '102 / A', status: 'Left' },
+  { name: 'Lavanya Das',        roll_number: '23R01A0434', previous_room: '205 / B', status: 'Left' },
+  { name: 'Manav Chatterjee',   roll_number: '23R01A0435', previous_room: '101 / A', status: 'Left' },
+  { name: 'Neha Joshi',         roll_number: '23R01A0436', previous_room: '203 / B', status: 'Left' },
+];
 
 type Tab = 'active' | 'left';
 
+// ────────────────────────────────────────────────────────────────
+
 export default function HostelAdminDashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
   const [tab, setTab] = useState<Tab>('active');
-  const [active, setActive] = useState<HostelAdminStudentRow[]>([]);
-  const [left, setLeft] = useState<HostelLeftStudentRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-
-  // Route-guard: only users with role='hostel' may view this page.
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || user?.role !== 'hostel') {
-      router.replace('/hostel/login');
-    }
-  }, [authLoading, isAuthenticated, user, router]);
-
-  // Load data once the user is confirmed as a hostel admin.
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || user?.role !== 'hostel') return;
-
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-        if (!token) throw new Error('No session');
-
-        const headers = { Authorization: `Bearer ${token}` };
-        const [activeRes, leftRes] = await Promise.all([
-          fetch('/api/hostel/admin/students', { headers }),
-          fetch('/api/hostel/admin/left', { headers }),
-        ]);
-
-        const activeData = await activeRes.json();
-        const leftData = await leftRes.json();
-        if (!activeRes.ok) throw new Error(activeData?.error || 'Failed to load active students');
-        if (!leftRes.ok) throw new Error(leftData?.error || 'Failed to load left students');
-
-        setActive(activeData.students || []);
-        setLeft(leftData.students || []);
-      } catch (e: any) {
-        setError(e?.message || 'Network error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [authLoading, isAuthenticated, user]);
 
   const filteredActive = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return active;
-    return active.filter(
+    if (!q) return MOCK_ACTIVE;
+    return MOCK_ACTIVE.filter(
       s =>
         s.name.toLowerCase().includes(q) ||
         s.roll_number.toLowerCase().includes(q) ||
         s.room_no.toLowerCase().includes(q) ||
         s.block.toLowerCase().includes(q)
     );
-  }, [active, query]);
+  }, [query]);
 
   const filteredLeft = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return left;
-    return left.filter(
+    if (!q) return MOCK_LEFT;
+    return MOCK_LEFT.filter(
       s =>
         s.name.toLowerCase().includes(q) ||
         s.roll_number.toLowerCase().includes(q) ||
-        s.previous_room_no.toLowerCase().includes(q) ||
-        s.previous_block.toLowerCase().includes(q)
+        s.previous_room.toLowerCase().includes(q)
     );
-  }, [left, query]);
+  }, [query]);
 
   const handleLogout = async () => {
     await logout();
     router.replace('/');
   };
 
-  if (authLoading || !isAuthenticated || user?.role !== 'hostel') {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: 'var(--ch-bg)' }}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e05252]" />
-      </div>
-    );
-  }
-
   return (
     <div
       className={`ch-themed min-h-screen flex${isDark ? ' dark' : ''}`}
       style={{ backgroundColor: 'var(--ch-bg)' }}
     >
-      {/* Sidebar */}
+      {/* ── Sidebar (scrollable) ─────────────────────────────── */}
       <aside
-        className="fixed left-0 top-0 h-screen w-[288px] flex flex-col p-6 z-20 border-r"
+        className="fixed left-0 top-0 h-screen w-[288px] flex flex-col z-20 border-r"
         style={{ backgroundColor: 'var(--ch-sidebar)', borderColor: 'var(--ch-border)' }}
       >
-        <div className="mb-8 px-2 flex items-center gap-3">
+        {/* Logo — fixed at top */}
+        <div className="p-6 pb-4 flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: 'var(--ch-accent)' }}
@@ -148,7 +133,8 @@ export default function HostelAdminDashboardPage() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1">
+        {/* Nav — flex-1, scrolls if needed */}
+        <nav className="flex-1 overflow-y-auto px-6 space-y-1">
           <button
             onClick={() => setTab('active')}
             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors"
@@ -190,8 +176,9 @@ export default function HostelAdminDashboardPage() {
           </button>
         </nav>
 
+        {/* Profile — anchored at bottom */}
         <div
-          className="mt-auto rounded-xl p-4 shadow-sm border"
+          className="mt-auto m-6 rounded-xl p-4 shadow-sm border"
           style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -220,7 +207,7 @@ export default function HostelAdminDashboardPage() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* ── Main ───────────────────────────────────────────────── */}
       <div className="flex-1 ml-[288px]">
         <header
           className="fixed top-0 right-0 left-[288px] h-20 backdrop-blur-md border-b z-10"
@@ -256,6 +243,7 @@ export default function HostelAdminDashboardPage() {
               </p>
             </div>
 
+            {/* Interactive stat cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 type="button"
@@ -276,7 +264,7 @@ export default function HostelAdminDashboardPage() {
                   </span>
                 </div>
                 <p className="text-3xl font-bold" style={{ color: 'var(--ch-text)' }}>
-                  {active.length}
+                  {MOCK_ACTIVE.length}
                 </p>
               </button>
 
@@ -299,11 +287,12 @@ export default function HostelAdminDashboardPage() {
                   </span>
                 </div>
                 <p className="text-3xl font-bold" style={{ color: 'var(--ch-text)' }}>
-                  {left.length}
+                  {MOCK_LEFT.length}
                 </p>
               </button>
             </div>
 
+            {/* Search */}
             <div className="relative max-w-md">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -312,7 +301,11 @@ export default function HostelAdminDashboardPage() {
               <Input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Search by name, roll, room…"
+                placeholder={
+                  tab === 'active'
+                    ? 'Search by name, roll, room, block…'
+                    : 'Search by name, roll, previous room…'
+                }
                 className="pl-10 border"
                 style={{
                   backgroundColor: 'var(--ch-card)',
@@ -322,17 +315,12 @@ export default function HostelAdminDashboardPage() {
               />
             </div>
 
+            {/* Table */}
             <div
               className="rounded-2xl border overflow-hidden"
               style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
             >
-              {loading ? (
-                <div className="flex items-center justify-center h-40">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#e05252]" />
-                </div>
-              ) : error ? (
-                <div className="p-6 text-sm text-[#e05252]">{error}</div>
-              ) : tab === 'active' ? (
+              {tab === 'active' ? (
                 <ActiveTable rows={filteredActive} />
               ) : (
                 <LeftTable rows={filteredLeft} />
@@ -345,74 +333,76 @@ export default function HostelAdminDashboardPage() {
   );
 }
 
-function ActiveTable({ rows }: { rows: HostelAdminStudentRow[] }) {
+// ────────────────────────────────────────────────────────────────
+
+function ActiveTable({ rows }: { rows: ActiveStudent[] }) {
   if (rows.length === 0) {
     return (
       <div className="p-8 text-center text-sm" style={{ color: 'var(--ch-muted)' }}>
-        No active hostel students.
+        No matching students.
       </div>
     );
   }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr style={{ color: 'var(--ch-muted)' }}>
-          <th className="text-left font-medium p-4">Name</th>
-          <th className="text-left font-medium p-4">Roll Number</th>
-          <th className="text-left font-medium p-4">Department</th>
-          <th className="text-left font-medium p-4">Room</th>
-          <th className="text-left font-medium p-4">Block</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(r => (
-          <tr key={r.roll_number} className="border-t" style={{ borderColor: 'var(--ch-border)' }}>
-            <td className="p-4 font-medium" style={{ color: 'var(--ch-text)' }}>{r.name}</td>
-            <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.roll_number}</td>
-            <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.department || '—'}</td>
-            <td className="p-4 font-semibold" style={{ color: 'var(--ch-text)' }}>{r.room_no}</td>
-            <td className="p-4 font-semibold" style={{ color: 'var(--ch-text)' }}>{r.block}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr style={{ color: 'var(--ch-muted)' }}>
+            <th className="text-left font-medium p-4">Name</th>
+            <th className="text-left font-medium p-4">Roll Number</th>
+            <th className="text-left font-medium p-4">Room Number</th>
+            <th className="text-left font-medium p-4">Block</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.roll_number} className="border-t" style={{ borderColor: 'var(--ch-border)' }}>
+              <td className="p-4 font-medium" style={{ color: 'var(--ch-text)' }}>{r.name}</td>
+              <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.roll_number}</td>
+              <td className="p-4 font-semibold" style={{ color: 'var(--ch-text)' }}>{r.room_no}</td>
+              <td className="p-4 font-semibold" style={{ color: 'var(--ch-text)' }}>{r.block}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function LeftTable({ rows }: { rows: HostelLeftStudentRow[] }) {
+function LeftTable({ rows }: { rows: LeftStudent[] }) {
   if (rows.length === 0) {
     return (
       <div className="p-8 text-center text-sm" style={{ color: 'var(--ch-muted)' }}>
-        No students have left.
+        No matching students.
       </div>
     );
   }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr style={{ color: 'var(--ch-muted)' }}>
-          <th className="text-left font-medium p-4">Name</th>
-          <th className="text-left font-medium p-4">Roll Number</th>
-          <th className="text-left font-medium p-4">Department</th>
-          <th className="text-left font-medium p-4">Previous Room</th>
-          <th className="text-left font-medium p-4">Previous Block</th>
-          <th className="text-left font-medium p-4">Left On</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(r => (
-          <tr key={r.roll_number} className="border-t" style={{ borderColor: 'var(--ch-border)' }}>
-            <td className="p-4 font-medium" style={{ color: 'var(--ch-text)' }}>{r.name}</td>
-            <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.roll_number}</td>
-            <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.department || '—'}</td>
-            <td className="p-4" style={{ color: 'var(--ch-text)' }}>{r.previous_room_no}</td>
-            <td className="p-4" style={{ color: 'var(--ch-text)' }}>{r.previous_block}</td>
-            <td className="p-4" style={{ color: 'var(--ch-muted)' }}>
-              {r.left_at ? new Date(r.left_at).toLocaleDateString() : '—'}
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr style={{ color: 'var(--ch-muted)' }}>
+            <th className="text-left font-medium p-4">Name</th>
+            <th className="text-left font-medium p-4">Roll Number</th>
+            <th className="text-left font-medium p-4">Previous Room</th>
+            <th className="text-left font-medium p-4">Status</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.roll_number} className="border-t" style={{ borderColor: 'var(--ch-border)' }}>
+              <td className="p-4 font-medium" style={{ color: 'var(--ch-text)' }}>{r.name}</td>
+              <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{r.roll_number}</td>
+              <td className="p-4" style={{ color: 'var(--ch-text)' }}>{r.previous_room}</td>
+              <td className="p-4">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e05252]/10 text-[#e05252]">
+                  {r.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
