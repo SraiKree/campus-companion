@@ -30,9 +30,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
     { href: '/student/academic-planning', label: 'Academic Planning', icon: CalendarDays },
     { href: '/student/learning-resources', label: 'Learning Resources', icon: Library },
     { href: '/student/announcements', label: 'Announcements', icon: Users },
-    ...(user?.isHosteller
-      ? [{ href: '/student/hostel', label: 'Hostel', icon: Building2 }]
-      : []),
+    { href: '/student/hostel', label: 'Hostel', icon: Building2 },
     { href: '/student/sports', label: 'Sports & Activities', icon: Trophy },
     { href: '/student/fees', label: 'Fee Payment', icon: Wallet },
     { href: '/student/certificates', label: 'Certificates', icon: Award },

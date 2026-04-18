@@ -3,7 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // GET /api/hostel/student/:id
 // :id is the student's roll_number (case-insensitive).
-// Returns 403 if the student is not a hosteller or has left.
+// Returns 404 if the student isn't in students25 or has no current allocation.
+// The UI always renders the Hostel page; absence of an allocation is shown
+// as an empty state, not an access-denied error.
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,22 +18,15 @@ export async function GET(
       return NextResponse.json({ error: 'Roll number required' }, { status: 400 });
     }
 
-    // 1. Verify hosteller flag
+    // 1. Look up the student
     const { data: student, error: studentErr } = await supabaseAdmin
       .from('students25')
-      .select('roll_number, name, department, year, is_hosteller, hostel_status')
+      .select('roll_number, name, department, year')
       .ilike('roll_number', roll)
       .single();
 
     if (studentErr || !student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-    }
-
-    if (!student.is_hosteller || student.hostel_status !== 'active') {
-      return NextResponse.json(
-        { error: 'Hostel access not available for this student' },
-        { status: 403 }
-      );
     }
 
     // 2. Find current allocation

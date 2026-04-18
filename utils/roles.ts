@@ -9,7 +9,7 @@ export const ROLE_DASHBOARD_PATH: Record<UserRole, string> = {
   faculty: '/faculty',
   principal: '/principal',
   management: '/management',
-  hostel: '/hostel',
+  hostel: '/hostel/dashboard',
   hod: '/hod',
 };
 

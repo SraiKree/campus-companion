@@ -265,11 +265,9 @@ export default function StudentComplaintsPage() {
                 style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
               >
                 <option value="">Select category</option>
-                {COMPLAINT_CATEGORIES
-                  .filter((c) => c !== 'Hostel' || user?.isHosteller)
-                  .map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                {COMPLAINT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
 

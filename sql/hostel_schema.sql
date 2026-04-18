@@ -74,10 +74,10 @@ INSERT INTO hostel_rooms (block, room_no, capacity) VALUES
   ('B', '201', 3), ('B', '202', 3), ('B', '203', 3)
 ON CONFLICT (block, room_no) DO NOTHING;
 
--- Default hostel admin (email: warden@mlrit.ac.in, password: warden123)
-INSERT INTO hostel_admins (email, password, name, role) VALUES
-  ('warden@mlrit.ac.in', 'warden123', 'Chief Warden', 'warden')
-ON CONFLICT (email) DO NOTHING;
+-- NOTE: hostel_admins has NO seeded credentials.
+-- Insert a row manually when real warden credentials are available, e.g.:
+--   INSERT INTO hostel_admins (email, password, name, role)
+--     VALUES ('<email>', '<password>', '<name>', 'warden');
 
 -- Weekly mess menu
 INSERT INTO mess_menu (day_of_week, breakfast, lunch, snacks, dinner) VALUES

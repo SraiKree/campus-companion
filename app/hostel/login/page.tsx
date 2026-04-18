@@ -1,40 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building2, Mail, Lock } from 'lucide-react';
+// Placeholder hostel-admin login screen.
+// Real authentication is NOT wired up yet — warden credentials will be
+// configured later by inserting a row into the hostel_admins table and
+// replacing this form's submit handler with the actual auth call.
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { Building2, Mail, Lock, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useHostelAdminAuth } from '@/contexts/HostelAdminAuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function HostelAdminLoginPage() {
-  const router = useRouter();
-  const { admin, login, loading: authLoading } = useHostelAdminAuth();
   const { isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!authLoading && admin) router.replace('/hostel/dashboard');
-  }, [authLoading, admin, router]);
+  const [info, setInfo] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
-    setSubmitting(true);
-    setError(null);
-    const res = await login(email.trim().toLowerCase(), password);
-    if (!res.success) {
-      setError(res.error || 'Login failed');
-      setSubmitting(false);
-      return;
-    }
-    router.replace('/hostel/dashboard');
+    // No real auth — this is a placeholder until warden credentials are
+    // provided. See app/api/hostel/auth/login/route.ts for the backend hook.
+    setInfo(
+      'Hostel-admin authentication is not yet configured. Credentials will be set up by the administrator.'
+    );
   };
 
   return (
@@ -72,7 +64,7 @@ export default function HostelAdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="warden@mlrit.ac.in"
+                placeholder="admin@example.com"
                 className="pl-10 border"
                 style={{
                   backgroundColor: 'var(--ch-bg)',
@@ -107,18 +99,31 @@ export default function HostelAdminLoginPage() {
             </div>
           </div>
 
-          {error && (
-            <p className="text-sm text-[#e05252]">{error}</p>
+          {info && (
+            <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>
+              {info}
+            </p>
           )}
 
           <Button
             type="submit"
-            disabled={submitting || !email.trim() || !password}
+            disabled={!email.trim() || !password}
             className="w-full bg-[#e05252] hover:bg-[#c94545] text-white h-11"
           >
-            {submitting ? 'Signing in…' : 'Sign In'}
+            Sign In
           </Button>
         </form>
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+            style={{ color: 'var(--ch-muted)' }}
+          >
+            <ArrowLeft className="w-3 h-3" />
+            Back to main login
+          </Link>
+        </div>
       </div>
     </div>
   );

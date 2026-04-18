@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Building2, BedDouble, Users, Utensils, AlertCircle } from 'lucide-react';
+import { Building2, BedDouble, Users, Utensils, Info } from 'lucide-react';
 
 import StudentLayout from '@/components/layout/StudentLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,74 +9,59 @@ import type { HostelStudentDetails, MessMenuRow } from '@/lib/hostel';
 import { DAYS_OF_WEEK } from '@/lib/hostel';
 
 export default function StudentHostelPage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
 
   const [details, setDetails] = useState<HostelStudentDetails | null>(null);
   const [menu, setMenu] = useState<MessMenuRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [noAllocation, setNoAllocation] = useState(false);
 
-  // Gate: non-students redirect to /, non-hostellers redirect to /student
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated || user?.role !== 'student') {
-      router.push('/');
-      return;
-    }
-    if (!user?.isHosteller) {
-      router.push('/student');
-    }
-  }, [authLoading, isAuthenticated, user, router]);
-
-  useEffect(() => {
-    if (!user?.isHosteller || !user?.roll_no) return;
 
     const load = async () => {
       setLoading(true);
+      setNoAllocation(false);
+
+      // Mess menu is public info — always fetch
       try {
-        const [detailsRes, menuRes] = await Promise.all([
-          fetch(`/api/hostel/student/${encodeURIComponent(user.roll_no!)}`),
-          fetch('/api/hostel/mess-menu'),
-        ]);
-
-        const detailsData = await detailsRes.json();
-        if (!detailsRes.ok) {
-          setError(detailsData?.error || 'Failed to load hostel details');
-        } else {
-          setDetails(detailsData.student);
+        const menuRes = await fetch('/api/hostel/mess-menu');
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          setMenu(menuData.menu || []);
         }
-
-        const menuData = await menuRes.json();
-        if (menuRes.ok) setMenu(menuData.menu || []);
-      } catch (e: any) {
-        setError(e?.message || 'Network error');
-      } finally {
-        setLoading(false);
+      } catch {
+        /* non-fatal */
       }
+
+      // Room details — only if the user has a roll number
+      if (user?.roll_no) {
+        try {
+          const res = await fetch(`/api/hostel/student/${encodeURIComponent(user.roll_no)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setDetails(data.student);
+          } else {
+            setNoAllocation(true);
+          }
+        } catch {
+          setNoAllocation(true);
+        }
+      } else {
+        setNoAllocation(true);
+      }
+
+      setLoading(false);
     };
 
     load();
-  }, [user?.isHosteller, user?.roll_no]);
+  }, [authLoading, user?.roll_no]);
 
-  if (authLoading || !user?.isHosteller) {
-    return (
-      <StudentLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e05252]" />
-        </div>
-      </StudentLayout>
-    );
-  }
-
-  const todayName = DAYS_OF_WEEK[
-    (new Date().getDay() + 6) % 7 // shift so Monday=0, Sunday=6
-  ];
+  const todayName = DAYS_OF_WEEK[(new Date().getDay() + 6) % 7];
 
   return (
     <StudentLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-[#e05252]/10 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-[#e05252]" />
@@ -98,26 +82,8 @@ export default function StudentHostelPage() {
           </div>
         )}
 
-        {!loading && error && (
-          <div
-            className="flex items-start gap-3 rounded-xl border p-4"
-            style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
-          >
-            <AlertCircle className="w-5 h-5 text-[#e05252] mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
-                {error}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--ch-muted)' }}>
-                Please contact the hostel warden if you believe this is a mistake.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {!loading && !error && details && (
+        {!loading && details && (
           <>
-            {/* Room + block cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div
                 className="rounded-2xl border p-6"
@@ -150,7 +116,6 @@ export default function StudentHostelPage() {
               </div>
             </div>
 
-            {/* Roommates */}
             <div
               className="rounded-2xl border p-6"
               style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
@@ -194,6 +159,25 @@ export default function StudentHostelPage() {
               )}
             </div>
           </>
+        )}
+
+        {/* Empty state — shown if no allocation, but page still renders normally */}
+        {!loading && noAllocation && !details && (
+          <div
+            className="flex items-start gap-3 rounded-2xl border p-6"
+            style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
+          >
+            <Info className="w-5 h-5 text-[#e05252] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--ch-text)' }}>
+                No hostel allocation found
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--ch-muted)' }}>
+                You don't have a hostel room assigned yet. If you're a hosteller and this looks wrong,
+                contact the hostel warden. The weekly mess menu is shown below.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Mess menu */}
@@ -258,6 +242,19 @@ export default function StudentHostelPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {!loading && menu.length === 0 && (
+          <div
+            className="rounded-2xl border p-6 text-sm"
+            style={{
+              backgroundColor: 'var(--ch-card)',
+              borderColor: 'var(--ch-border)',
+              color: 'var(--ch-muted)',
+            }}
+          >
+            Mess menu not available yet.
           </div>
         )}
       </div>
