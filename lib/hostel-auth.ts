@@ -1,56 +1,50 @@
 import type { NextRequest } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createClient } from '@supabase/supabase-js';
 
-// Simple session token scheme for hostel admin.
-// Token format: base64("hostelAdminId:issuedAt"). Good enough for a separate
-// login flow that mirrors the project's existing default-password pattern.
-
-const TOKEN_PREFIX = 'hostel:';
-
-export function issueHostelAdminToken(adminId: string): string {
-  const raw = `${adminId}:${Date.now()}`;
-  const encoded =
-    typeof window === 'undefined'
-      ? Buffer.from(raw).toString('base64')
-      : btoa(raw);
-  return `${TOKEN_PREFIX}${encoded}`;
-}
-
-export function parseHostelAdminToken(token: string | null): string | null {
-  if (!token || !token.startsWith(TOKEN_PREFIX)) return null;
-  try {
-    const encoded = token.slice(TOKEN_PREFIX.length);
-    const raw =
-      typeof window === 'undefined'
-        ? Buffer.from(encoded, 'base64').toString('utf8')
-        : atob(encoded);
-    const [adminId] = raw.split(':');
-    return adminId || null;
-  } catch {
-    return null;
-  }
-}
-
+// Verifies that the incoming request carries a valid Supabase access token
+// AND that the authenticated user has role === 'hostel' (warden / admin).
+// Mirrors the authenticateStudent() pattern used in /api/student/complaints.
 export async function authenticateHostelAdmin(
   request: NextRequest
-): Promise<{ id: string; email: string; name: string; role: string }> {
-  const header = request.headers.get('authorization');
-  const token = header?.startsWith('Bearer ') ? header.split('Bearer ')[1] : null;
-  const adminId = parseHostelAdminToken(token);
+): Promise<{ id: string; email: string | null }> {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.split('Bearer ')[1]
+    : null;
 
-  if (!adminId) {
+  if (!token) {
     throw { status: 401, message: 'Unauthorized' };
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('hostel_admins')
-    .select('id, email, name, role')
-    .eq('id', adminId)
-    .single();
+  const authClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    }
+  );
 
-  if (error || !data) {
-    throw { status: 401, message: 'Invalid admin session' };
+  const { data: { user }, error } = await authClient.auth.getUser();
+  if (error || !user) {
+    throw { status: 401, message: 'Unauthorized' };
   }
 
-  return data;
+  // Role check: metadata first, fall back to user_roles table
+  const metadataRole = (user.user_metadata as any)?.role;
+  let role = typeof metadataRole === 'string' ? metadataRole.toLowerCase() : '';
+
+  if (role !== 'hostel') {
+    const { data: roleRow } = await authClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    role = (roleRow?.role ?? '').toString().toLowerCase();
+  }
+
+  if (role !== 'hostel') {
+    throw { status: 403, message: 'Forbidden' };
+  }
+
+  return { id: user.id, email: user.email ?? null };
 }

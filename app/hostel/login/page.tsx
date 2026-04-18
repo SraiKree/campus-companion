@@ -1,32 +1,49 @@
 'use client';
 
-// Placeholder hostel-admin login screen.
-// Real authentication is NOT wired up yet — warden credentials will be
-// configured later by inserting a row into the hostel_admins table and
-// replacing this form's submit handler with the actual auth call.
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Building2, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function HostelAdminLoginPage() {
+  const router = useRouter();
+  const { login, user, isAuthenticated, loading: authLoading } = useAuth();
   const { isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [info, setInfo] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // If a hostel-admin is already signed in, skip the form.
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user?.role === 'hostel') {
+      router.replace('/hostel/dashboard');
+    }
+  }, [authLoading, isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // No real auth — this is a placeholder until warden credentials are
-    // provided. See app/api/hostel/auth/login/route.ts for the backend hook.
-    setInfo(
-      'Hostel-admin authentication is not yet configured. Credentials will be set up by the administrator.'
-    );
+    if (!email.trim() || !password) return;
+
+    setError(null);
+    setSubmitting(true);
+
+    const success = await login(email.trim(), password, 'hostel');
+
+    setSubmitting(false);
+
+    if (success) {
+      router.replace('/hostel/dashboard');
+    } else {
+      setError('Invalid email or password.');
+    }
   };
 
   return (
@@ -64,7 +81,7 @@ export default function HostelAdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                autoComplete="email"
                 className="pl-10 border"
                 style={{
                   backgroundColor: 'var(--ch-bg)',
@@ -85,32 +102,37 @@ export default function HostelAdminLoginPage() {
                 style={{ color: 'var(--ch-muted)' }}
               />
               <Input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="pl-10 border"
+                autoComplete="current-password"
+                className="pl-10 pr-10 border"
                 style={{
                   backgroundColor: 'var(--ch-bg)',
                   borderColor: 'var(--ch-border)',
                   color: 'var(--ch-text)',
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: 'var(--ch-muted)' }}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
-          {info && (
-            <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>
-              {info}
-            </p>
-          )}
+          {error && <p className="text-sm text-[#e05252]">{error}</p>}
 
           <Button
             type="submit"
-            disabled={!email.trim() || !password}
+            disabled={submitting || !email.trim() || !password}
             className="w-full bg-[#e05252] hover:bg-[#c94545] text-white h-11"
           >
-            Sign In
+            {submitting ? 'Signing in…' : 'Sign In'}
           </Button>
         </form>
 
