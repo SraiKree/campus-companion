@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, Calendar, Clock, CalendarDays,
-  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare,
+  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare, Trophy, Library,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -30,7 +30,9 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
     { href: '/faculty/academic-planning', label: 'Academic Planning', icon: CalendarDays },
     { href: '/faculty/grades', label: 'Grades', icon: BookOpen },
     { href: '/faculty/assignments', label: 'Assignments', icon: FileText },
+    { href: '/faculty/learning-resources', label: 'Learning Resources', icon: Library },
     { href: '/faculty/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/faculty/sports', label: 'Sports & Activities', icon: Trophy },
     { href: '/faculty/complaints', label: 'Complaints', icon: MessageSquare },
     { href: '/faculty/profile', label: 'Profile', icon: UserCircle },
   ];
