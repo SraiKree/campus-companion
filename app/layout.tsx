@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { HostelAdminAuthProvider } from '@/contexts/HostelAdminAuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import Providers from './providers';
 import { ToasterWrapper } from '@/components/toaster-wrapper';
@@ -29,10 +30,12 @@ export default function RootLayout({
         <Providers>
           <TooltipProvider>
             <AuthProvider>
-              <ThemeProvider>
-                {children}
-                <ToasterWrapper />
-              </ThemeProvider>
+              <HostelAdminAuthProvider>
+                <ThemeProvider>
+                  {children}
+                  <ToasterWrapper />
+                </ThemeProvider>
+              </HostelAdminAuthProvider>
             </AuthProvider>
           </TooltipProvider>
         </Providers>

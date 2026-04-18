@@ -8,6 +8,8 @@ export interface User {
   roll_no?: string; // For students
   class_name?: string; // For students
   department?: string; // For both students and faculty
+  isHosteller?: boolean; // Students only
+  hostelStatus?: 'active' | 'left'; // Students only
 }
 
 export interface AttendanceRecord {

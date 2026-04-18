@@ -13,11 +13,30 @@ export async function POST(request: NextRequest) {
     const cleanRollNumber = rollNumber.trim().toUpperCase();
 
     // Validate student exists in students25 table (exact match, case-insensitive)
-    const { data: student, error: studentError } = await supabaseAdmin
-      .from('students25')
-      .select('roll_number, name, email, department, section, semester, year')
-      .ilike('roll_number', cleanRollNumber)
-      .single();
+    // Try with hostel columns first; fall back to the original columns if the
+    // hostel migration hasn't been run yet.
+    let student: any = null;
+    let studentError: any = null;
+
+    {
+      const res = await supabaseAdmin
+        .from('students25')
+        .select('roll_number, name, email, department, section, semester, year, is_hosteller, hostel_status')
+        .ilike('roll_number', cleanRollNumber)
+        .single();
+      student = res.data;
+      studentError = res.error;
+    }
+
+    if (studentError) {
+      const res = await supabaseAdmin
+        .from('students25')
+        .select('roll_number, name, email, department, section, semester, year')
+        .ilike('roll_number', cleanRollNumber)
+        .single();
+      student = res.data;
+      studentError = res.error;
+    }
 
     if (studentError || !student) {
       return NextResponse.json({ error: 'Invalid roll number' }, { status: 401 });
@@ -41,7 +60,9 @@ export async function POST(request: NextRequest) {
         section: student.section,
         semester: student.semester,
         year: student.year,
-        role: 'student'
+        role: 'student',
+        isHosteller: Boolean(student.is_hosteller ?? false),
+        hostelStatus: ((student.hostel_status as 'active' | 'left') ?? 'active')
       },
       credentials: {
         email: studentEmail,
