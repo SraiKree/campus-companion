@@ -4,6 +4,7 @@ import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { WorkspaceProvider } from '@/contexts/WorkspaceContext';
 import Providers from './providers';
 import { ToasterWrapper } from '@/components/toaster-wrapper';
 
@@ -30,8 +31,10 @@ export default function RootLayout({
           <TooltipProvider>
             <AuthProvider>
               <ThemeProvider>
-                {children}
-                <ToasterWrapper />
+                <WorkspaceProvider>
+                  {children}
+                  <ToasterWrapper />
+                </WorkspaceProvider>
               </ThemeProvider>
             </AuthProvider>
           </TooltipProvider>

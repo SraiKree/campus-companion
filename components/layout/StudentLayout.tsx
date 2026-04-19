@@ -1,14 +1,18 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus, Building2,
-  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library
+  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useWorkspaceTransition } from '@/hooks/useWorkspaceTransition';
+import WorkspaceSwitcher from '@/components/workspace/WorkspaceSwitcher';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -18,31 +22,96 @@ interface StudentLayoutProps {
   children: ReactNode;
 }
 
+// ── Nav item config split by workspace ──────────────────────────────────────
+const educationNav = [
+  { href: '/student', label: 'Dashboard', icon: Home },
+  { href: '/student/courses', label: 'Courses', icon: BookOpen },
+  { href: '/student/attendance', label: 'Attendance', icon: Calendar },
+  { href: '/student/academic-planning', label: 'Academic Planning', icon: CalendarDays },
+  { href: '/student/learning-resources', label: 'Learning Resources', icon: Library },
+  { href: '/student/announcements', label: 'Announcements', icon: Users },
+];
+
+const adminNav = [
+  { href: '/student', label: 'Dashboard', icon: Home },
+  { href: '/student/hostel', label: 'Hostel', icon: Building2 },
+  { href: '/student/sports', label: 'Sports & Activities', icon: Trophy },
+  { href: '/student/fees', label: 'Fee Payment', icon: Wallet },
+  { href: '/student/certificates', label: 'Certificates', icon: Award },
+  { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
+  { href: '/student/requests', label: 'Raise Request', icon: Send },
+  { href: '/student/feedback', label: 'Faculty Feedback', icon: MessageSquare },
+];
+
 const StudentLayout = ({ children }: StudentLayoutProps) => {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { workspace, toggleWorkspace, setDragOffset, dragOffset } = useWorkspace();
   const pathname = usePathname();
 
-  const navItems = [
-    { href: '/student', label: 'Dashboard', icon: Home },
-    { href: '/student/courses', label: 'Courses', icon: BookOpen },
-    { href: '/student/attendance', label: 'Attendance', icon: Calendar },
-    { href: '/student/academic-planning', label: 'Academic Planning', icon: CalendarDays },
-    { href: '/student/learning-resources', label: 'Learning Resources', icon: Library },
-    { href: '/student/announcements', label: 'Announcements', icon: Users },
-    { href: '/student/hostel', label: 'Hostel', icon: Building2 },
-    { href: '/student/sports', label: 'Sports & Activities', icon: Trophy },
-    { href: '/student/fees', label: 'Fee Payment', icon: Wallet },
-    { href: '/student/certificates', label: 'Certificates', icon: Award },
-    { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
-    { href: '/student/requests', label: 'Raise Request', icon: Send },
-    { href: '/student/feedback', label: 'Faculty Feedback', icon: MessageSquare },
-  ];
+  // Nav transition: key change forces React remount, CSS @keyframes handles fade-in.
+  // This avoids the .ch-themed * transition override that breaks inline opacity/transform.
+
+  // ── Keyboard shortcut: Ctrl+Shift+Arrow ────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        toggleWorkspace();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [toggleWorkspace]);
+
+  // ── Swipe gesture ──────────────────────────────────────────────────────
+  const onDrag = useCallback((dx: number) => setDragOffset(dx), [setDragOffset]);
+
+  const swipeHandlers = useSwipeGesture({
+    threshold: 80,
+    onDrag,
+    onSwipeRight: () => {
+      // Swipe right → education
+      if (workspace === 'admin') toggleWorkspace();
+    },
+    onSwipeLeft: () => {
+      // Swipe left → admin
+      if (workspace === 'education') toggleWorkspace();
+    },
+  });
+
+  // ── Workspace transition (fade-out → swap → fade-in + tab memory) ────
+  const {
+    displayedWorkspace,
+    navAnimClass,
+    contentAnimClass,
+    handleAnimEnd,
+  } = useWorkspaceTransition('/student', educationNav, adminNav);
+
+  const navItems = displayedWorkspace === 'education' ? educationNav : adminNav;
 
   const isActive = (href: string) => {
     if (href === '/student') return pathname === href;
     return pathname?.startsWith(href);
   };
+
+  const isEducation = workspace === 'education';
+
+  // ── Workspace-aware colour tokens ──────────────────────────────────
+  // Education: green-tinted palette. Admin: existing red palette.
+  const wsAccent = isEducation ? '#059669' : (isDark ? '#ff8d89' : '#e05252');
+  const wsSidebarBg = isEducation
+    ? (isDark ? '#0f1a16' : '#eef6f2')
+    : 'var(--ch-sidebar)';
+  const wsBorderColor = isEducation
+    ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
+    : 'var(--ch-border)';
+  const wsNavActive = isEducation
+    ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
+    : 'var(--ch-nav-active)';
+  const wsHover = isEducation
+    ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
+    : 'var(--ch-hover)';
 
   return (
     <div
@@ -51,25 +120,30 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
     >
       {/* ── Sidebar ────────────────────────────────────────────────────── */}
       <aside
-        className="fixed left-0 top-0 h-screen w-[288px] flex flex-col p-6 z-20 border-r"
+        {...swipeHandlers}
+        className="fixed left-0 top-0 h-screen w-[288px] flex flex-col p-6 z-20 select-none"
         style={{
-          backgroundColor: 'var(--ch-sidebar)',
-          borderColor: 'var(--ch-border)',
+          backgroundColor: wsSidebarBg,
+          borderRight: `1px solid ${wsBorderColor}`,
+          borderLeft: `3px solid ${wsAccent}`,
+          transform: dragOffset ? `translateX(${dragOffset * 0.15}px)` : undefined,
+          transition: dragOffset ? 'none' : 'transform 0.3s ease-out, background-color 0.35s ease, border-color 0.35s ease',
+          touchAction: 'pan-y',
         }}
       >
         {/* Logo */}
-        <div className="mb-8 px-2">
+        <div className="mb-4 px-2">
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: 'var(--ch-accent)' }}
+              className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-300"
+              style={{ backgroundColor: wsAccent }}
             >
               <Home className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1
-                className="text-xl font-bold tracking-tight"
-                style={{ color: 'var(--ch-accent)' }}
+                className="text-xl font-bold tracking-tight transition-colors duration-300"
+                style={{ color: wsAccent }}
               >
                 Campus Hub
               </h1>
@@ -83,42 +157,59 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
           </div>
         </div>
 
+        {/* Workspace Switcher */}
+        <div className="mb-4 px-1">
+          <WorkspaceSwitcher />
+        </div>
+
         {/* Navigation — scrolls if nav items overflow vertically */}
         <nav className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1 -mr-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            return (
-              <Link key={item.href} href={item.href}>
-                <div
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl transition-colors cursor-pointer"
-                  style={{
-                    backgroundColor: active ? 'var(--ch-nav-active)' : 'transparent',
-                    border: active ? '1px solid var(--ch-border)' : '1px solid transparent',
-                    boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--ch-hover)';
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Icon
-                    className="w-[18px] h-[18px]"
-                    style={{ color: active ? 'var(--ch-accent)' : 'var(--ch-muted)' }}
-                  />
-                  <span
-                    className="text-base font-medium"
-                    style={{ color: active ? 'var(--ch-accent)' : 'var(--ch-muted)' }}
+          <div className={`no-transition ${navAnimClass} space-y-1`} onAnimationEnd={handleAnimEnd}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className="flex items-center gap-4 px-4 py-3 rounded-xl transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: active ? wsNavActive : 'transparent',
+                      border: active ? `1px solid ${wsBorderColor}` : '1px solid transparent',
+                      boxShadow: active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    }}
+                    onMouseEnter={e => {
+                      if (!active) (e.currentTarget as HTMLDivElement).style.backgroundColor = wsHover;
+                    }}
+                    onMouseLeave={e => {
+                      if (!active) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
+                    }}
                   >
-                    {item.label}
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
+                    <Icon
+                      className="w-[18px] h-[18px] transition-colors duration-300"
+                      style={{ color: active ? wsAccent : 'var(--ch-muted)' }}
+                    />
+                    <span
+                      className="text-base font-medium transition-colors duration-300"
+                      style={{ color: active ? wsAccent : 'var(--ch-muted)' }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
+
+        {/* Swipe hint */}
+        <div
+          className="text-center py-2"
+          style={{ opacity: 0.4 }}
+        >
+          <p className="text-[10px] font-medium" style={{ color: 'var(--ch-muted)' }}>
+            Swipe sidebar or press Ctrl+Shift+Arrow
+          </p>
+        </div>
 
         {/* User Profile */}
         <div
@@ -131,7 +222,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src="/placeholder-avatar.png" />
-              <AvatarFallback style={{ backgroundColor: 'var(--ch-accent)' }} className="text-white">
+              <AvatarFallback style={{ backgroundColor: wsAccent }} className="text-white transition-colors duration-300">
                 {user?.name?.charAt(0) || 'A'}
               </AvatarFallback>
             </Avatar>
@@ -193,6 +284,20 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
 
             {/* Right controls */}
             <div className="flex items-center gap-3">
+              {/* Workspace badge in header */}
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
+                style={{
+                  backgroundColor: isEducation
+                    ? 'rgba(5,150,105,0.08)'
+                    : 'rgba(224,82,82,0.08)',
+                  color: isEducation ? '#059669' : '#e05252',
+                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(224,82,82,0.2)'}`,
+                }}
+              >
+                {isEducation ? 'Learning Mode' : 'Admin Mode'}
+              </div>
+
               {/* Notifications */}
               <NotificationPanel />
 
@@ -229,7 +334,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                     <AvatarImage src="/placeholder-avatar.png" />
                     <AvatarFallback
                       className="text-white text-xs"
-                      style={{ backgroundColor: 'var(--ch-accent)' }}
+                      style={{ backgroundColor: wsAccent }}
                     >
                       {user?.name?.charAt(0) || 'A'}
                     </AvatarFallback>
@@ -248,7 +353,9 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
 
         {/* Page Content */}
         <main className="pt-28 pb-12 px-10">
-          {children}
+          <div className={`no-transition ${contentAnimClass}`}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

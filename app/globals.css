@@ -79,6 +79,51 @@
   --ch-invert-text:    #1a1a1a;
 }
 
+/* ── Workspace nav directional slide animations ───────────────────────────── */
+/* edu → admin: exit left, enter from right                                   */
+/* admin → edu: exit right, enter from left                                   */
+
+@keyframes ws-nav-out-left {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-14px); }
+}
+@keyframes ws-nav-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(14px); }
+}
+@keyframes ws-nav-in-from-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes ws-nav-in-from-left {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.ws-nav-exit-left  { animation: ws-nav-out-left    0.18s ease-in forwards; }
+.ws-nav-exit-right { animation: ws-nav-out-right   0.18s ease-in forwards; }
+.ws-nav-enter-right{ animation: ws-nav-in-from-right 0.22s ease-out both; }
+.ws-nav-enter-left { animation: ws-nav-in-from-left  0.22s ease-out both; }
+
+/* Keep element hidden during the swap frame between exit and enter */
+.ws-nav-swap { opacity: 0; }
+
+/* ── Content transition animations ─────────────────────────────────────────── */
+@keyframes ws-content-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes ws-content-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ws-content-exit {
+  animation: ws-content-out 0.2s ease-in forwards;
+}
+.ws-content-enter {
+  animation: ws-content-in 0.25s ease-out both;
+}
+
 /* ── Smooth colour transitions for student/faculty pages ─────────────────── */
 .ch-themed,
 .ch-themed *:not(.no-transition):not(.no-transition *) {
