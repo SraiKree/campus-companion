@@ -1,7 +1,7 @@
 import type { UserRole } from '@/types/erp';
 
 /** All roles that log in through the faculty/staff login flow (email + password) */
-export const STAFF_ROLES: UserRole[] = ['faculty', 'principal', 'management', 'hostel', 'hod'];
+export const STAFF_ROLES: UserRole[] = ['faculty', 'principal', 'management', 'hostel', 'hod', 'club', 'admin'];
 
 /** Map each role to its dashboard base path */
 export const ROLE_DASHBOARD_PATH: Record<UserRole, string> = {
@@ -11,6 +11,8 @@ export const ROLE_DASHBOARD_PATH: Record<UserRole, string> = {
   management: '/management',
   hostel: '/hostel/dashboard',
   hod: '/hod',
+  club: '/club',
+  admin: '/admin',
 };
 
 /** Display labels for each role */
@@ -21,6 +23,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   management: 'Management',
   hostel: 'Hostel',
   hod: 'Department Head',
+  club: 'Club',
+  admin: 'Admin Office',
 };
 
 /** Check if a role uses the staff (email/password) login flow */
@@ -35,5 +39,5 @@ export function getDashboardPath(role: UserRole): string {
 
 /** Validate that a string is a valid UserRole */
 export function isValidRole(role: string): role is UserRole {
-  return ['student', 'faculty', 'principal', 'management', 'hostel', 'hod'].includes(role);
+  return ['student', 'faculty', 'principal', 'management', 'hostel', 'hod', 'club', 'admin'].includes(role);
 }

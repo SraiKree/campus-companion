@@ -54,12 +54,21 @@ CREATE INDEX IF NOT EXISTS idx_club_announcements_club ON club_announcements(clu
 CREATE INDEX IF NOT EXISTS idx_club_events_club ON club_events(club_id);
 CREATE INDEX IF NOT EXISTS idx_club_events_date ON club_events(event_date);
 
--- Seed sample clubs (user_id NULL — link after creating the auth user)
-INSERT INTO clubs (name, description, advisor_name, contact_email) VALUES
-  ('Coding Club',      'Competitive programming, hackathons, open-source.', 'Prof. A. Sharma', 'coding@mlrit.ac.in'),
-  ('Dance Club',       'Classical & contemporary dance troupe.',            'Prof. R. Mehta',   'dance@mlrit.ac.in'),
-  ('Literary Club',    'Debate, creative writing, literary magazine.',      'Prof. S. Iyer',    'literary@mlrit.ac.in'),
-  ('Photography Club', 'Campus photography, photo walks, exhibitions.',     'Prof. K. Rao',     'photo@mlrit.ac.in')
+-- Seed clubs (user_id NULL — populated by scripts/seed-club-users.ts)
+INSERT INTO clubs (name, contact_email) VALUES
+  ('Came Club',      'came@mlrit.ac.in'),
+  ('Club Lit',       'lit@mlrit.ac.in'),
+  ('CIE Club',       'cie@mlrit.ac.in'),
+  ('Apex',           'apex@mlrit.ac.in'),
+  ('Scope',          'scope@mlrit.ac.in'),
+  ('EWB',            'ewb@mlrit.ac.in'),
+  ('NSS',            'nss@mlrit.ac.in'),
+  ('Code Club',      'code@mlrit.ac.in'),
+  ('Aim Club',       'aim@mlrit.ac.in'),
+  ('MECH Club',      'mech@mlrit.ac.in'),
+  ('Robotics Club',  'robotics@mlrit.ac.in'),
+  ('Squad Club',     'squad@mlrit.ac.in'),
+  ('IT Club',        'it@mlrit.ac.in')
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
