@@ -5,6 +5,10 @@ export const SPORT_CATEGORIES = [
   'Badminton',
   'Athletics',
   'Indoor Games',
+  'Volleyball',
+  'Kabaddi',
+  'Throwball',
+  'Gymnasium',
 ] as const;
 
 export type SportCategory = (typeof SPORT_CATEGORIES)[number];
@@ -125,11 +129,40 @@ export interface SportCourt {
   name: string;
   location: string | null;
   capacity: number | null;
+  max_players: number;
   description: string | null;
   opens_at: string;
   closes_at: string;
   slot_minutes: number;
   is_active: boolean;
+  created_at: string;
+}
+
+export interface CourtBookingPlayer {
+  id: string;
+  booking_id: string;
+  roll_number: string;
+  player_name: string | null;
+  added_at: string;
+}
+
+export interface SportEquipment {
+  id: string;
+  sport_id: string | null;
+  name: string;
+  description: string | null;
+  total_quantity: number;
+  available_quantity?: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BookingEquipment {
+  id: string;
+  booking_id: string;
+  equipment_id: string;
+  equipment_name?: string;
+  quantity: number;
   created_at: string;
 }
 
@@ -149,6 +182,8 @@ export interface CourtBooking {
   purpose: string | null;
   status: BookingStatus;
   created_at: string;
+  players?: CourtBookingPlayer[];
+  equipment?: BookingEquipment[];
 }
 
 export interface SportAchievement {

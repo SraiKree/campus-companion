@@ -12,7 +12,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import {
-  SPORT_CATEGORIES, type Sport, type SportCategory, type SportCourt, type CourtBooking,
+  SPORT_CATEGORIES, type Sport, type SportCategory, type SportCourt, type CourtBooking, type SportEquipment,
 } from '@/lib/sports';
 
 import StudentLayout from '@/components/layout/StudentLayout';
@@ -37,6 +37,10 @@ const CATEGORY_COLORS: Record<SportCategory, { bg: string; text: string; border:
   Badminton: { bg: 'rgba(147,51,234,0.1)', text: '#9333ea', border: 'rgba(147,51,234,0.3)', accent: '#9333ea' },
   Athletics: { bg: 'rgba(220,38,38,0.1)', text: '#dc2626', border: 'rgba(220,38,38,0.3)', accent: '#dc2626' },
   'Indoor Games': { bg: 'rgba(13,148,136,0.1)', text: '#0d9488', border: 'rgba(13,148,136,0.3)', accent: '#0d9488' },
+  Volleyball: { bg: 'rgba(202,138,4,0.1)', text: '#ca8a04', border: 'rgba(202,138,4,0.3)', accent: '#ca8a04' },
+  Kabaddi: { bg: 'rgba(190,24,93,0.1)', text: '#be185d', border: 'rgba(190,24,93,0.3)', accent: '#be185d' },
+  Throwball: { bg: 'rgba(8,145,178,0.1)', text: '#0891b2', border: 'rgba(8,145,178,0.3)', accent: '#0891b2' },
+  Gymnasium: { bg: 'rgba(101,163,13,0.1)', text: '#65a30d', border: 'rgba(101,163,13,0.3)', accent: '#65a30d' },
 };
 
 interface SportEventWithMeta {
@@ -102,6 +106,42 @@ interface LeaderboardEntry {
   achievements: number;
 }
 
+interface Facility {
+  sport_id: string | null;
+  sport_name: string;
+  sport_category?: SportCategory;
+  location: string | null;
+  max_players: number;
+  opens_at: string;
+  closes_at: string;
+  slot_minutes: number;
+  courts: SportCourt[];
+}
+
+function groupCourtsBySport(courts: SportCourt[]): Facility[] {
+  const byId = new Map<string, Facility>();
+  for (const c of courts) {
+    const key = c.sport_id || c.name;
+    const existing = byId.get(key);
+    if (existing) {
+      existing.courts.push(c);
+    } else {
+      byId.set(key, {
+        sport_id: c.sport_id,
+        sport_name: c.sport_name || c.name,
+        sport_category: c.sport_category,
+        location: c.location,
+        max_players: c.max_players,
+        opens_at: c.opens_at,
+        closes_at: c.closes_at,
+        slot_minutes: c.slot_minutes,
+        courts: [c],
+      });
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) => a.sport_name.localeCompare(b.sport_name));
+}
+
 export default function StudentSportsPage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -124,7 +164,7 @@ export default function StudentSportsPage() {
   const [registerNotes, setRegisterNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const [bookingCourt, setBookingCourt] = useState<SportCourt | null>(null);
+  const [bookingFacility, setBookingFacility] = useState<Facility | null>(null);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'student')) {
@@ -173,6 +213,8 @@ export default function StudentSportsPage() {
       fetchAll();
     }
   }, [loading, isAuthenticated, user]);
+
+  const facilities = useMemo(() => groupCourtsBySport(courts), [courts]);
 
   const filteredSports = useMemo(() => {
     return sports.filter((s) => {
@@ -530,17 +572,19 @@ export default function StudentSportsPage() {
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-[#e05252]" />
-                <h3 className="text-lg font-bold" style={{ color: 'var(--ch-text)' }}>Available Courts</h3>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--ch-text)' }}>Sports Facilities</h3>
               </div>
-              {loadingData ? <LoadingBlock /> : courts.length === 0 ? (
-                <EmptyBlock icon={Building2} title="No courts available" message="Check back later for bookable courts" />
+              {loadingData ? <LoadingBlock /> : facilities.length === 0 ? (
+                <EmptyBlock icon={Building2} title="No facilities available" message="Check back later for bookable facilities" />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {courts.map((c) => {
-                    const colors = CATEGORY_COLORS[c.sport_category as SportCategory] || CATEGORY_COLORS['Indoor Games'];
+                  {facilities.map((f) => {
+                    const colors = CATEGORY_COLORS[f.sport_category as SportCategory] || CATEGORY_COLORS['Indoor Games'];
+                    const unit = f.courts.length === 1 ? 'facility' : (f.courts[0]?.name.toLowerCase().includes('table') ? 'tables' : f.courts[0]?.name.toLowerCase().includes('board') ? 'boards' : 'courts');
+                    const IconComp = ICON_MAP[sports.find(s => s.id === f.sport_id)?.icon || 'Trophy'] || Trophy;
                     return (
                       <div
-                        key={c.id}
+                        key={f.sport_id || f.sport_name}
                         className="rounded-2xl border p-5 space-y-3 hover:shadow-md transition-shadow"
                         style={{
                           backgroundColor: 'var(--ch-card)',
@@ -550,39 +594,34 @@ export default function StudentSportsPage() {
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-bold text-lg" style={{ color: 'var(--ch-text)' }}>{c.name}</h4>
-                            {c.sport_name && (
-                              <Badge
-                                className="border text-xs mt-1"
-                                style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}
-                              >
-                                {c.sport_name}
-                              </Badge>
-                            )}
+                            <h4 className="font-bold text-lg" style={{ color: 'var(--ch-text)' }}>{f.sport_name}</h4>
+                            <Badge
+                              className="border text-xs mt-1"
+                              style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border }}
+                            >
+                              {f.courts.length} {unit}
+                            </Badge>
                           </div>
                           <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                             style={{ background: `linear-gradient(135deg, ${colors.accent}, ${colors.text})` }}
                           >
-                            <Building2 className="w-5 h-5 text-white" />
+                            <IconComp className="w-5 h-5 text-white" />
                           </div>
                         </div>
-                        {c.description && (
-                          <p className="text-sm" style={{ color: 'var(--ch-muted)' }}>{c.description}</p>
-                        )}
                         <div className="text-xs space-y-1" style={{ color: 'var(--ch-muted)' }}>
-                          {c.location && (
-                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {c.location}</div>
+                          {f.location && (
+                            <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {f.location}</div>
                           )}
                           <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" /> Open {c.opens_at.slice(0, 5)} – {c.closes_at.slice(0, 5)}
+                            <Clock className="w-3.5 h-3.5" /> {f.opens_at.slice(0, 5)} – {f.closes_at.slice(0, 5)}
                           </div>
-                          {c.capacity && (
-                            <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Capacity {c.capacity}</div>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5" /> Up to {f.max_players} {f.max_players === 1 ? 'player' : 'players'} per booking
+                          </div>
                         </div>
                         <Button
-                          onClick={() => setBookingCourt(c)}
+                          onClick={() => setBookingFacility(f)}
                           className="w-full gap-2 text-white"
                           style={{ backgroundColor: colors.accent }}
                         >
@@ -594,14 +633,17 @@ export default function StudentSportsPage() {
                 </div>
               )}
             </section>
+          </TabsContent>
 
+          {/* My Activity Tab */}
+          <TabsContent value="me" className="mt-6 space-y-6">
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#e05252]" />
                 <h3 className="text-lg font-bold" style={{ color: 'var(--ch-text)' }}>My Bookings</h3>
               </div>
               {myBookings.length === 0 ? (
-                <EmptyBlock icon={Calendar} title="No bookings yet" message="Book a court above to reserve your slot" />
+                <EmptyBlock icon={Calendar} title="No bookings yet" message="Book a facility to reserve a slot" />
               ) : (
                 <div className="space-y-2">
                   {myBookings.map((b) => {
@@ -638,6 +680,18 @@ export default function StudentSportsPage() {
                           {b.purpose && (
                             <p className="text-xs mt-1 italic" style={{ color: 'var(--ch-muted)' }}>"{b.purpose}"</p>
                           )}
+                          {b.players && b.players.length > 0 && (
+                            <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--ch-muted)' }}>
+                              <Users className="w-3 h-3" />
+                              Players: {b.players.map((p) => p.roll_number).join(', ')}
+                            </p>
+                          )}
+                          {b.equipment && b.equipment.length > 0 && (
+                            <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--ch-muted)' }}>
+                              <Award className="w-3 h-3" />
+                              Equipment: {b.equipment.map((e) => `${e.equipment_name || 'Item'} × ${e.quantity}`).join(', ')}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge
@@ -659,138 +713,6 @@ export default function StudentSportsPage() {
                       </div>
                     );
                   })}
-                </div>
-              )}
-            </section>
-          </TabsContent>
-
-          {/* My Activity Tab */}
-          <TabsContent value="me" className="mt-6 space-y-6">
-            <section className="space-y-3">
-              <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--ch-text)' }}>
-                <Calendar className="w-5 h-5 text-[#e05252]" />
-                Participation History
-              </h3>
-              {myRegs.length === 0 ? (
-                <EmptyBlock icon={Calendar} title="No registrations yet" message="Register for an event to get started" />
-              ) : (
-                <div className="space-y-2">
-                  {myRegs.map((r) => {
-                    const statusInfo = {
-                      Pending: { color: '#d97706', bg: 'rgba(217,119,6,0.1)', icon: Clock },
-                      Approved: { color: '#16a34a', bg: 'rgba(22,163,74,0.1)', icon: CheckCircle2 },
-                      Rejected: { color: '#dc2626', bg: 'rgba(220,38,38,0.1)', icon: XCircle },
-                    }[r.status] || { color: '#64748b', bg: 'rgba(100,116,139,0.1)', icon: AlertCircle };
-                    const SIcon = statusInfo.icon;
-                    return (
-                      <div
-                        key={r.id}
-                        className="rounded-xl border p-4 flex items-center justify-between gap-3"
-                        style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold truncate" style={{ color: 'var(--ch-text)' }}>
-                              {r.event?.name || 'Event'}
-                            </h4>
-                            {r.event?.sport_name && (
-                              <Badge className="text-[10px]" variant="outline">{r.event.sport_name}</Badge>
-                            )}
-                          </div>
-                          <div className="text-xs flex flex-wrap items-center gap-3" style={{ color: 'var(--ch-muted)' }}>
-                            {r.event?.event_date && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(r.event.event_date).toLocaleDateString()}
-                              </span>
-                            )}
-                            {r.event?.venue && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {r.event.venue}
-                              </span>
-                            )}
-                            <span>Registered {new Date(r.registered_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            className="border gap-1"
-                            style={{ backgroundColor: statusInfo.bg, color: statusInfo.color, borderColor: statusInfo.color + '40' }}
-                          >
-                            <SIcon className="w-3 h-3" />
-                            {r.status}
-                          </Badge>
-                          {r.status === 'Pending' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleCancelRegistration(r.id)}
-                              className="text-red-600 h-8"
-                            >
-                              Cancel
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className="space-y-3">
-              <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--ch-text)' }}>
-                <Medal className="w-5 h-5 text-amber-600" />
-                Achievements & Certificates
-              </h3>
-              {myAchievements.length === 0 ? (
-                <EmptyBlock icon={Medal} title="No achievements yet" message="Your awards will appear here once granted" />
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {myAchievements.map((a) => (
-                    <div
-                      key={a.id}
-                      className="rounded-2xl border p-5 relative overflow-hidden"
-                      style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
-                    >
-                      <div
-                        className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 -translate-y-6 translate-x-6"
-                        style={{ background: 'linear-gradient(135deg,#f59e0b,#dc2626)' }}
-                      />
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
-                          <Medal className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold" style={{ color: 'var(--ch-text)' }}>{a.title}</h4>
-                          {a.position && (
-                            <Badge className="mt-1 bg-amber-100 text-amber-700 border-amber-200">
-                              {a.position}
-                            </Badge>
-                          )}
-                          <div className="text-xs mt-2 space-y-0.5" style={{ color: 'var(--ch-muted)' }}>
-                            {a.sport_name && <p>Sport: {a.sport_name}</p>}
-                            {a.event_name && <p>Event: {a.event_name}</p>}
-                            <p>Awarded: {new Date(a.awarded_at).toLocaleDateString()}</p>
-                          </div>
-                          {a.description && (
-                            <p className="text-sm mt-2" style={{ color: 'var(--ch-muted)' }}>{a.description}</p>
-                          )}
-                          {a.certificate_url && (
-                            <a
-                              href={a.certificate_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-3 text-sm font-semibold text-amber-600 hover:text-amber-700"
-                            >
-                              <Download className="w-3.5 h-3.5" /> Download Certificate
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </section>
@@ -961,9 +883,9 @@ export default function StudentSportsPage() {
 
       {/* Court booking dialog */}
       <CourtBookingDialog
-        court={bookingCourt}
-        onClose={() => setBookingCourt(null)}
-        onBooked={() => { setBookingCourt(null); fetchAll(); }}
+        facility={bookingFacility}
+        onClose={() => setBookingFacility(null)}
+        onBooked={() => { setBookingFacility(null); fetchAll(); }}
       />
 
       {/* Register dialog */}
@@ -1186,55 +1108,137 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   );
 }
 
+function buildSlots(opensAt: string, closesAt: string, slotMinutes: number) {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const fmt = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+  const slots: { start: string; end: string }[] = [];
+  for (let t = toMin(opensAt); t + slotMinutes <= toMin(closesAt); t += slotMinutes) {
+    slots.push({ start: fmt(t), end: fmt(t + slotMinutes) });
+  }
+  return slots;
+}
+
+function formatSlotLabel(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${hh}${m ? ':' + String(m).padStart(2, '0') : ''} ${period}`;
+}
+
 function CourtBookingDialog({
-  court, onClose, onBooked,
+  facility, onClose, onBooked,
 }: {
-  court: SportCourt | null;
+  facility: Facility | null;
   onClose: () => void;
   onBooked: () => void;
 }) {
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [selectedCourtId, setSelectedCourtId] = useState<string>('');
+  const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [purpose, setPurpose] = useState('');
   const [busy, setBusy] = useState<{ start_time: string; end_time: string; student_name: string | null }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [players, setPlayers] = useState<{ roll_no: string; name: string }[]>([]);
+  const [newRoll, setNewRoll] = useState('');
+  const [newName, setNewName] = useState('');
+  const [equipment, setEquipment] = useState<SportEquipment[]>([]);
+  const [equipmentQty, setEquipmentQty] = useState<Record<string, number>>({});
+  const [loadingEquipment, setLoadingEquipment] = useState(false);
 
   useEffect(() => {
-    if (!court) return;
+    if (!facility) return;
     setDate(new Date().toISOString().slice(0, 10));
-    setStartTime(court.opens_at.slice(0, 5));
-    const end = new Date(`2000-01-01T${court.opens_at}`);
-    end.setMinutes(end.getMinutes() + court.slot_minutes);
-    setEndTime(end.toTimeString().slice(0, 5));
+    setSelectedCourtId(facility.courts[0]?.id || '');
+    setSelectedSlot(null);
     setPurpose('');
-  }, [court]);
+    setPlayers([]);
+    setNewRoll('');
+    setNewName('');
+    setEquipment([]);
+    setEquipmentQty({});
+  }, [facility]);
 
   useEffect(() => {
-    if (!court || !date) return;
+    if (!selectedCourtId || !date) return;
     (async () => {
       setLoadingSlots(true);
       try {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
         if (!token) return;
-        const res = await fetch(`/api/student/sports/courts?court_id=${court.id}&date=${date}`, {
+        const res = await fetch(`/api/student/sports/courts?court_id=${selectedCourtId}&date=${date}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json().catch(() => ({}));
         setBusy(data.slots || []);
+        setSelectedSlot(null);
       } finally {
         setLoadingSlots(false);
       }
     })();
-  }, [court, date]);
+  }, [selectedCourtId, date]);
 
-  if (!court) return null;
+  useEffect(() => {
+    if (!facility?.sport_id || !selectedSlot || !date) {
+      setEquipment([]);
+      return;
+    }
+    (async () => {
+      setLoadingEquipment(true);
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) return;
+        const qs = new URLSearchParams({
+          sport_id: facility.sport_id!,
+          date,
+          start: selectedSlot.start,
+          end: selectedSlot.end,
+        });
+        const res = await fetch(`/api/student/sports/equipment?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        setEquipment(data.equipment || []);
+      } finally {
+        setLoadingEquipment(false);
+      }
+    })();
+  }, [facility?.sport_id, selectedSlot, date]);
+
+  const slots = useMemo(
+    () => (facility ? buildSlots(facility.opens_at, facility.closes_at, facility.slot_minutes) : []),
+    [facility]
+  );
+
+  const busyKey = (s: string, e: string) => `${s.slice(0, 5)}-${e.slice(0, 5)}`;
+  const busySet = useMemo(() => new Set(busy.map((b) => busyKey(b.start_time, b.end_time))), [busy]);
+
+  if (!facility) return null;
+
+  const maxTeammates = Math.max(0, (facility.max_players || 1) - 1);
+  const canAddPlayers = maxTeammates > 0;
+  const selectedCourt = facility.courts.find((c) => c.id === selectedCourtId) || facility.courts[0];
+
+  const addPlayer = () => {
+    const roll = newRoll.trim().toUpperCase();
+    if (!roll) return;
+    if (players.length >= maxTeammates) return;
+    if (players.some((p) => p.roll_no === roll)) { setNewRoll(''); setNewName(''); return; }
+    setPlayers([...players, { roll_no: roll, name: newName.trim() }]);
+    setNewRoll('');
+    setNewName('');
+  };
+
+  const removePlayer = (roll: string) => setPlayers(players.filter((p) => p.roll_no !== roll));
 
   const handleBook = async () => {
-    if (!startTime || !endTime) { alert('Pick a start and end time'); return; }
-    if (endTime <= startTime) { alert('End time must be after start time'); return; }
+    if (!selectedCourtId) { alert('Pick a court'); return; }
+    if (!selectedSlot) { alert('Pick a time slot'); return; }
 
     setSubmitting(true);
     try {
@@ -1246,11 +1250,15 @@ function CourtBookingDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          court_id: court.id,
+          court_id: selectedCourtId,
           booking_date: date,
-          start_time: startTime,
-          end_time: endTime,
+          start_time: selectedSlot.start,
+          end_time: selectedSlot.end,
           purpose,
+          players,
+          equipment: Object.entries(equipmentQty)
+            .filter(([, q]) => q > 0)
+            .map(([equipment_id, quantity]) => ({ equipment_id, quantity })),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1261,16 +1269,38 @@ function CourtBookingDialog({
     }
   };
 
+  const hasMultipleCourts = facility.courts.length > 1;
+
   return (
-    <Dialog open={!!court} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+    <Dialog open={!!facility} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Book {court.name}</DialogTitle>
+          <DialogTitle>Book {facility.sport_name}</DialogTitle>
           <DialogDescription>
-            {court.sport_name && `${court.sport_name} · `}Open {court.opens_at.slice(0, 5)} – {court.closes_at.slice(0, 5)}
+            Up to {facility.max_players} {facility.max_players === 1 ? 'player' : 'players'} · {facility.opens_at.slice(0, 5)} – {facility.closes_at.slice(0, 5)}
+            {facility.location ? ` · ${facility.location}` : ''}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {hasMultipleCourts && (
+            <div>
+              <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>
+                {selectedCourt?.name.toLowerCase().includes('table') ? 'Table'
+                  : selectedCourt?.name.toLowerCase().includes('board') ? 'Board'
+                  : 'Court'}
+              </label>
+              <select
+                value={selectedCourtId}
+                onChange={(e) => setSelectedCourtId(e.target.value)}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+                style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
+              >
+                {facility.courts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>Date</label>
             <Input
@@ -1280,28 +1310,131 @@ function CourtBookingDialog({
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>Start</label>
-              <Input
-                type="time"
-                value={startTime}
-                min={court.opens_at.slice(0, 5)}
-                max={court.closes_at.slice(0, 5)}
-                onChange={(e) => setStartTime(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>End</label>
-              <Input
-                type="time"
-                value={endTime}
-                min={court.opens_at.slice(0, 5)}
-                max={court.closes_at.slice(0, 5)}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
-            </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>Time slot</label>
+            {loadingSlots ? (
+              <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>Loading availability…</p>
+            ) : slots.length === 0 ? (
+              <p className="text-xs italic" style={{ color: 'var(--ch-muted)' }}>No slots configured.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {slots.map((s) => {
+                  const isBusy = busySet.has(`${s.start}-${s.end}`);
+                  const isSelected = selectedSlot?.start === s.start && selectedSlot?.end === s.end;
+                  return (
+                    <button
+                      key={`${s.start}-${s.end}`}
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => setSelectedSlot(s)}
+                      className="rounded-lg border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
+                      style={{
+                        backgroundColor: isSelected ? '#e05252' : isBusy ? 'rgba(239,68,68,0.08)' : 'var(--ch-bg)',
+                        color: isSelected ? '#fff' : 'var(--ch-text)',
+                        borderColor: isSelected ? '#e05252' : 'var(--ch-border)',
+                      }}
+                    >
+                      {formatSlotLabel(s.start)} – {formatSlotLabel(s.end)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          {canAddPlayers && (
+            <div className="rounded-lg border p-3 space-y-2" style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)' }}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: 'var(--ch-muted)' }}>
+                  <Users className="w-3.5 h-3.5" /> Teammates
+                </p>
+                <span className="text-[10px]" style={{ color: 'var(--ch-muted)' }}>
+                  You + {players.length} of {maxTeammates}
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                <Input
+                  className="col-span-2"
+                  placeholder="Roll number"
+                  value={newRoll}
+                  onChange={(e) => setNewRoll(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPlayer(); } }}
+                  disabled={players.length >= maxTeammates}
+                />
+                <Input
+                  className="col-span-2"
+                  placeholder="Name (optional)"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPlayer(); } }}
+                  disabled={players.length >= maxTeammates}
+                />
+                <Button
+                  type="button"
+                  onClick={addPlayer}
+                  disabled={!newRoll.trim() || players.length >= maxTeammates}
+                  className="col-span-1 bg-[#e05252] hover:bg-[#c94545] text-white"
+                >
+                  Add
+                </Button>
+              </div>
+              {players.length > 0 && (
+                <ul className="space-y-1">
+                  {players.map((p) => (
+                    <li key={p.roll_no} className="flex items-center justify-between text-xs rounded px-2 py-1" style={{ backgroundColor: 'var(--ch-card)' }}>
+                      <span style={{ color: 'var(--ch-text)' }}>
+                        <span className="font-semibold">{p.roll_no}</span>
+                        {p.name && <span style={{ color: 'var(--ch-muted)' }}> · {p.name}</span>}
+                      </span>
+                      <button type="button" onClick={() => removePlayer(p.roll_no)} className="text-red-500 hover:text-red-700">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {selectedSlot && (equipment.length > 0 || loadingEquipment) && (
+            <div className="rounded-lg border p-3 space-y-2" style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)' }}>
+              <p className="text-xs font-bold uppercase tracking-wide flex items-center gap-1" style={{ color: 'var(--ch-muted)' }}>
+                <Award className="w-3.5 h-3.5" /> Equipment (optional)
+              </p>
+              {loadingEquipment ? (
+                <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>Loading…</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {equipment.map((eq) => {
+                    const max = eq.available_quantity ?? eq.total_quantity;
+                    const qty = equipmentQty[eq.id] || 0;
+                    const disabled = max <= 0;
+                    const setQty = (n: number) => {
+                      const clamped = Math.max(0, Math.min(max, n));
+                      setEquipmentQty({ ...equipmentQty, [eq.id]: clamped });
+                    };
+                    return (
+                      <div key={eq.id} className="flex items-center justify-between gap-2 text-xs rounded px-2 py-1.5" style={{ backgroundColor: 'var(--ch-card)' }}>
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate" style={{ color: 'var(--ch-text)' }}>{eq.name}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--ch-muted)' }}>
+                            {disabled ? 'None available' : `${max} available`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button type="button" size="sm" variant="outline" className="h-7 w-7 p-0" disabled={disabled || qty <= 0} onClick={() => setQty(qty - 1)}>−</Button>
+                          <span className="min-w-[1.5rem] text-center font-semibold" style={{ color: 'var(--ch-text)' }}>{qty}</span>
+                          <Button type="button" size="sm" variant="outline" className="h-7 w-7 p-0" disabled={disabled || qty >= max} onClick={() => setQty(qty + 1)}>+</Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>Purpose (optional)</label>
             <Input
@@ -1310,34 +1443,12 @@ function CourtBookingDialog({
               placeholder="e.g. Practice with friends"
             />
           </div>
-          <div
-            className="rounded-lg border p-3"
-            style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)' }}
-          >
-            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--ch-muted)' }}>
-              Already booked on this date
-            </p>
-            {loadingSlots ? (
-              <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>Loading…</p>
-            ) : busy.length === 0 ? (
-              <p className="text-xs italic" style={{ color: 'var(--ch-muted)' }}>No bookings — court is free all day!</p>
-            ) : (
-              <ul className="space-y-1 text-xs" style={{ color: 'var(--ch-text)' }}>
-                {busy.map((s, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
-                    {s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
             onClick={handleBook}
-            disabled={submitting}
+            disabled={submitting || !selectedSlot}
             className="bg-[#e05252] hover:bg-[#c94545] text-white gap-1"
           >
             <CalendarPlus className="w-4 h-4" />
