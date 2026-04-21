@@ -1,31 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import type { UserRole } from '@/types/erp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Eye, EyeOff, GraduationCap, Moon, Sun } from 'lucide-react';
+import { getDashboardPath, ROLE_LABELS } from '@/utils/roles';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Moon,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react';
 
-const Login = () => {
-  const [rollNumber, setRollNumber] = useState('');
+interface RoleLoginProps {
+  role: UserRole;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+}
+
+export default function RoleLogin({ role, title, subtitle, icon: Icon }: RoleLoginProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { loginWithRollNumber } = useAuth();
+  const { loginStrict, isAuthenticated, user, loading: authLoading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Don't auto-redirect while a login is in flight — loginStrict
+    // validates the actual role and navigates on its own. Redirecting
+    // here races the auth state listener, which sets a temporary
+    // user before the real role is resolved.
+    if (loading) return;
+    if (!authLoading && isAuthenticated && user) {
+      router.replace(getDashboardPath(user.role));
+    }
+  }, [authLoading, isAuthenticated, user, router, loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = await loginWithRollNumber(rollNumber, password);
+
+    const result = await loginStrict(email, password, role);
     setLoading(false);
+
     if (!result.success) {
-      setError(result.error || 'Invalid roll number or password');
+      setError(result.error || 'Login failed');
+      return;
     }
+    router.replace(getDashboardPath(role));
   };
 
   return (
@@ -52,13 +87,13 @@ const Login = () => {
             className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
             style={{ backgroundColor: 'var(--ch-accent)' }}
           >
-            <GraduationCap className="h-8 w-8 text-white" />
+            <Icon className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--ch-text)' }}>
-            CampusHub
+            {title}
           </h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--ch-muted)' }}>
-            Student Login
+            {subtitle}
           </p>
         </div>
 
@@ -79,16 +114,13 @@ const Login = () => {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
-                Roll Number
+                Email
               </label>
               <Input
-                type="text"
-                placeholder="e.g., 23R21A1285"
-                value={rollNumber}
-                onChange={(e) => {
-                  setRollNumber(e.target.value);
-                  setPassword(e.target.value);
-                }}
+                type="email"
+                placeholder={`Enter your ${ROLE_LABELS[role].toLowerCase()} email`}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-11 rounded-xl border"
                 style={{
@@ -106,7 +138,7 @@ const Login = () => {
               <div className="relative">
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Your roll number is your password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -127,9 +159,6 @@ const Login = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>
-                Use your roll number as both username and password
-              </p>
             </div>
 
             <Button
@@ -142,11 +171,19 @@ const Login = () => {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
+
+            <Link
+              href="/"
+              className="flex items-center justify-center gap-1.5 text-xs pt-1 hover:underline"
+              style={{ color: 'var(--ch-muted)' }}
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Back to student login
+            </Link>
           </form>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default Login;

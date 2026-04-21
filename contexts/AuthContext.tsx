@@ -8,6 +8,7 @@ import { isValidRole } from '@/utils/roles';
 interface AuthContextType {
   user: AppUser | null;
   login: (email: string, password: string, selectedRole?: UserRole) => Promise<boolean>;
+  loginStrict: (email: string, password: string, expectedRole: UserRole) => Promise<{ success: boolean; error?: string }>;
   loginWithRollNumber: (rollNumber: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -220,6 +221,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   }, []);
 
+  const loginStrict = useCallback(async (email: string, password: string, expectedRole: UserRole) => {
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      return { success: false, error: 'Invalid email or password.' };
+    }
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
+      return { success: false, error: 'Session could not be established.' };
+    }
+
+    let actualRole: UserRole | null = null;
+    const metaRole = (authUser.user_metadata as Record<string, unknown> | undefined)?.role;
+    if (typeof metaRole === 'string' && isValidRole(metaRole)) {
+      actualRole = metaRole;
+    } else {
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authUser.id)
+        .single();
+      if (roleData?.role && isValidRole(roleData.role)) {
+        actualRole = roleData.role;
+      }
+    }
+
+    if (actualRole !== expectedRole) {
+      await supabase.auth.signOut();
+      clearUserData();
+      return {
+        success: false,
+        error: 'This account is not authorised to sign in on this page.',
+      };
+    }
+
+    const userData: AppUser = {
+      id: authUser.id,
+      email: authUser.email || email,
+      name: authUser.email || email,
+      role: actualRole,
+    };
+    storeUserData(userData);
+    return { success: true };
+  }, []);
+
   const signup = useCallback(async (email: string, password: string, name: string, role: UserRole) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -264,7 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithRollNumber, signup, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, login, loginStrict, loginWithRollNumber, signup, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );
