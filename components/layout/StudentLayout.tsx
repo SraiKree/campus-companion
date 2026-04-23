@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus, Building2,
-  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library, Mail,
+  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library, Mail, Bus, Briefcase,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -35,8 +35,10 @@ const educationNav = [
 const adminNav = [
   { href: '/student', label: 'Dashboard', icon: Home },
   { href: '/student/hostel', label: 'Hostel', icon: Building2 },
+  { href: '/student/transport', label: 'Transport', icon: Bus },
   { href: '/student/sports', label: 'Sports & Activities', icon: Trophy },
   { href: '/student/fees', label: 'Fee Payment', icon: Wallet },
+  { href: '/student/admin-accounts', label: 'Admin & Accounts', icon: Briefcase },
   { href: '/student/certificates', label: 'Certificates', icon: Award },
   { href: '/student/leave-request', label: 'Leave Request', icon: Mail },
   { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
