@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useStudentGrades } from '@/hooks/useStudentGrades';
+import CourseDiscussion from '@/components/CourseDiscussion';
 import { 
   ChevronDown,
   ChevronRight,
@@ -498,13 +499,20 @@ export default function StudentCoursesPage() {
             )}
 
             {activeTab === 'discussions' && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <FileText className="w-16 h-16 text-[#666] mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-[#1a1a1a] mb-2">Discussions</h3>
-                  <p className="text-[#666]">Coming soon</p>
+              selectedCourse ? (
+                <CourseDiscussion
+                  key={selectedCourse.id}
+                  subjectCode={selectedCourse.code}
+                  subjectName={selectedCourse.name}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <FileText className="w-16 h-16 text-[#666] mx-auto mb-4" />
+                    <p className="text-[#666]">Select a course to open its discussion</p>
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {activeTab === 'grades' && (

@@ -152,6 +152,23 @@
 .dark .text-\[\#e05252\]\/10 { color: var(--ch-accent-soft) !important; }
 .dark .bg-\[\#1a1a1a\]       { background-color: #0e0e0e !important; }
 
+/* ── User-accent overrides (light + dark) ──────────────────────────────────
+   When a user selects a custom accent color, --ch-accent is set on :root,
+   so these rules remap the hardcoded peach hexes used throughout student
+   pages to the current accent. Dark-mode rules above already cover dark. */
+:root[style*="--ch-accent"] .ch-themed .text-\[\#e05252\]   { color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .bg-\[\#e05252\]     { background-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .border-\[\#e05252\] { border-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .text-\[\#c44545\]   { color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .bg-\[\#c44545\]     { background-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .border-\[\#c44545\] { border-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .text-\[\#c94545\]   { color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .hover\:bg-\[\#c44545\]:hover { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+:root[style*="--ch-accent"] .ch-themed .hover\:border-\[\#e05252\]:hover { border-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .focus-visible\:ring-\[\#e05252\]:focus-visible { --tw-ring-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .focus-visible\:border-\[\#e05252\]:focus-visible { border-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .focus\:border-\[\#c44545\]:focus { border-color: var(--ch-accent) !important; }
+
 /* Card shadows in dark mode */
 .dark .shadow-sm,
 .dark .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }

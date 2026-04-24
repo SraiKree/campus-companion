@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import NotificationPanel from '@/components/NotificationPanel';
+import AccentPicker from '@/components/AccentPicker';
 
 interface StudentLayoutProps {
   children: ReactNode;
@@ -48,7 +49,7 @@ const adminNav = [
 
 const StudentLayout = ({ children }: StudentLayoutProps) => {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, accent } = useTheme();
   const { workspace, toggleWorkspace, setDragOffset, dragOffset } = useWorkspace();
   const pathname = usePathname();
 
@@ -101,20 +102,34 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
   const isEducation = workspace === 'education';
 
   // ── Workspace-aware colour tokens ──────────────────────────────────
-  // Education: green-tinted palette. Admin: existing red palette.
-  const wsAccent = isEducation ? '#059669' : (isDark ? '#ff8d89' : '#e05252');
-  const wsSidebarBg = isEducation
-    ? (isDark ? '#0f1a16' : '#eef6f2')
-    : 'var(--ch-sidebar)';
-  const wsBorderColor = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
-    : 'var(--ch-border)';
-  const wsNavActive = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
-    : 'var(--ch-nav-active)';
-  const wsHover = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
-    : 'var(--ch-hover)';
+  // User-picked accent (if set) overrides the defaults for both workspaces.
+  // Defaults: Education → green, Admin → peach (dark-mode variant in dark theme).
+  const hasCustomAccent = !!accent;
+  const wsAccent = hasCustomAccent
+    ? accent!
+    : isEducation
+      ? '#059669'
+      : (isDark ? '#ff8d89' : '#e05252');
+  const wsSidebarBg = hasCustomAccent
+    ? 'var(--ch-sidebar)'
+    : isEducation
+      ? (isDark ? '#0f1a16' : '#eef6f2')
+      : 'var(--ch-sidebar)';
+  const wsBorderColor = hasCustomAccent
+    ? 'var(--ch-border)'
+    : isEducation
+      ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
+      : 'var(--ch-border)';
+  const wsNavActive = hasCustomAccent
+    ? 'var(--ch-nav-active)'
+    : isEducation
+      ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
+      : 'var(--ch-nav-active)';
+  const wsHover = hasCustomAccent
+    ? 'var(--ch-hover)'
+    : isEducation
+      ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
+      : 'var(--ch-hover)';
 
   return (
     <div
@@ -291,11 +306,17 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
                 style={{
-                  backgroundColor: isEducation
-                    ? 'rgba(5,150,105,0.08)'
-                    : 'rgba(224,82,82,0.08)',
-                  color: isEducation ? '#059669' : '#e05252',
-                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(224,82,82,0.2)'}`,
+                  backgroundColor: hasCustomAccent
+                    ? 'var(--ch-accent-soft)'
+                    : isEducation
+                      ? 'rgba(5,150,105,0.08)'
+                      : 'rgba(224,82,82,0.08)',
+                  color: wsAccent,
+                  border: `1px solid ${hasCustomAccent
+                    ? 'var(--ch-accent-soft)'
+                    : isEducation
+                      ? 'rgba(5,150,105,0.2)'
+                      : 'rgba(224,82,82,0.2)'}`,
                 }}
               >
                 {isEducation ? 'Learning Mode' : 'Admin Mode'}
@@ -313,7 +334,7 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                 style={{
                   backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
                   borderColor: 'var(--ch-border)',
-                  color: isDark ? '#ff8d89' : '#e05252',
+                  color: wsAccent,
                 }}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
@@ -322,6 +343,9 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
                   : <Moon className="w-4 h-4" />
                 }
               </button>
+
+              {/* Accent color picker */}
+              <AccentPicker />
 
               {/* Profile */}
               <Link href="/student/profile">

@@ -10,13 +10,12 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import {
-  RESOURCE_TYPES, RESOURCE_TYPE_LABEL, SEMESTERS,
+  RESOURCE_TYPE_LABEL, SEMESTERS,
   formatFileSize, isEmbeddableVideo,
   type LearningResource, type ResourceType,
 } from '@/lib/learning-resources';
 
 import StudentLayout from '@/components/layout/StudentLayout';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -212,70 +211,52 @@ export default function StudentLearningResourcesPage() {
 
   return (
     <StudentLayout>
-      <div className="space-y-6">
-        {/* Hero Bento */}
-        <div className="bg-white rounded-2xl p-8 border border-[#e5e5e5] relative overflow-hidden">
-          <div className="flex items-start gap-5 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#e05252]/10 flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-7 h-7 text-[#e05252]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Badge className="bg-[#e05252]/10 text-[#e05252] border-[#e05252]/20 hover:bg-[#e05252]/10 text-[10px] font-bold tracking-wider mb-3">
-                LIBRARY · {totals.all} ITEMS
-              </Badge>
-              <h1 className="text-4xl font-extrabold text-[#1a1a1a] tracking-tight mb-1">
-                Learning Resources
-              </h1>
-              <p className="text-sm text-[#666]">
-                Notes, lectures, syllabus and reference materials uploaded by your faculty.
-              </p>
+      <div className="bg-white rounded-2xl border border-[#e5e5e5] overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+        {/* Header */}
+        <div className="border-b border-[#e5e5e5] p-6">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <h1 className="text-2xl font-bold text-[#1a1a1a]">Learning Resources</h1>
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666]" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search resources..."
+                className="pl-10 h-9 bg-white border-[#e5e5e5] text-sm text-[#1a1a1a] placeholder:text-[#666] focus-visible:ring-0 focus-visible:border-[#e05252]"
+              />
             </div>
           </div>
 
-          {/* Stat pills */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t border-[#e5e5e5]">
-            {RESOURCE_TYPES.map((t) => {
-              const M = TYPE_META[t];
-              const Icon = M.icon;
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {tabList.map((t) => {
+              const isActive = tab === t.key;
               return (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className="bg-[#f2f0ed] border border-[#e5e5e5] rounded-xl p-4 flex items-center gap-3 hover:border-[#e05252] transition-colors text-left"
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-[#e05252] text-white shadow-md'
+                      : 'text-[#666] hover:bg-[#f2f0ed]'
+                  }`}
                 >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: M.soft, color: M.color }}
+                  <span>{t.label}</span>
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-[#f2f0ed] text-[#666]'
+                    }`}
                   >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-2xl font-extrabold text-[#1a1a1a] leading-none">{totals[t]}</p>
-                    <p className="text-[10px] font-bold text-[#666] uppercase tracking-wider mt-1">
-                      {M.label}
-                    </p>
-                  </div>
+                    {t.count}
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          <div className="absolute -right-20 -top-20 w-48 h-48 bg-[#e05252]/5 rounded-full blur-3xl pointer-events-none" />
-        </div>
-
-        {/* Search + filters */}
-        <div className="bg-white rounded-2xl p-5 border border-[#e5e5e5] space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666]" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title, subject, or description..."
-              className="pl-10 h-11 bg-[#f2f0ed] border-[#e5e5e5] text-[#1a1a1a] placeholder:text-[#666] focus-visible:ring-[#e05252]"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2.5 items-center">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#666] uppercase tracking-wider mr-1">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-1.5 text-xs text-[#666] mr-1">
               <Filter className="w-3.5 h-3.5" /> Filters
             </div>
             <FilterSelect value={subjectFilter} onChange={setSubjectFilter} placeholder="All Subjects">
@@ -290,7 +271,7 @@ export default function StudentLearningResourcesPage() {
             {hasAnyFilter && (
               <button
                 onClick={() => { setSubjectFilter(''); setSemesterFilter(''); setFacultyFilter(''); setSearch(''); }}
-                className="h-9 px-3 text-[11px] font-bold text-[#e05252] hover:text-[#c94545] uppercase tracking-wider flex items-center gap-1"
+                className="h-8 px-2.5 text-xs font-medium text-[#e05252] hover:text-[#c94545] flex items-center gap-1"
               >
                 <X className="w-3 h-3" /> Clear
               </button>
@@ -298,65 +279,40 @@ export default function StudentLearningResourcesPage() {
           </div>
         </div>
 
-        {/* Tabs — dashboard-style pill row */}
-        <div className="bg-white rounded-2xl p-2 border border-[#e5e5e5] flex flex-wrap gap-1">
-          {tabList.map((t) => {
-            const Icon = t.icon;
-            const isActive = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex items-center gap-2 px-4 h-10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                  isActive
-                    ? 'bg-[#e05252] text-white shadow-[0_0_12px_rgba(224,82,82,0.3)]'
-                    : 'text-[#666] hover:bg-[#f2f0ed] hover:text-[#1a1a1a]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{t.label}</span>
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-[#f2f0ed] text-[#666]'
-                  }`}
-                >
-                  {t.count}
-                </span>
-              </button>
-            );
-          })}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loadingData ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#e05252]" />
+            </div>
+          ) : filteredForTab.length === 0 ? (
+            <EmptyBlock
+              icon={tab === 'bookmarks' ? Bookmark : tab === 'recent' ? Clock : BookOpen}
+              title={
+                tab === 'bookmarks' ? 'No bookmarks yet' :
+                tab === 'recent' ? 'No recent views' :
+                'No resources found'
+              }
+              message={
+                tab === 'bookmarks' ? 'Save resources for quick access later.' :
+                tab === 'recent' ? 'Resources you open will appear here.' :
+                'Try changing your search or filters.'
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredForTab.map((r) => (
+                <ResourceCard
+                  key={r.id}
+                  resource={r}
+                  onOpen={() => openResource(r)}
+                  onDownload={() => downloadResource(r)}
+                  onToggleBookmark={() => toggleBookmark(r)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Grid */}
-        {loadingData ? (
-          <LoadingBlock />
-        ) : filteredForTab.length === 0 ? (
-          <EmptyBlock
-            icon={tab === 'bookmarks' ? Bookmark : tab === 'recent' ? Clock : BookOpen}
-            title={
-              tab === 'bookmarks' ? 'No bookmarks yet' :
-              tab === 'recent' ? 'No recent views' :
-              'No resources found'
-            }
-            message={
-              tab === 'bookmarks' ? 'Save resources for quick access later.' :
-              tab === 'recent' ? 'Resources you open will appear here.' :
-              'Try changing your search or filters.'
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filteredForTab.map((r) => (
-              <ResourceCard
-                key={r.id}
-                resource={r}
-                onOpen={() => openResource(r)}
-                onDownload={() => downloadResource(r)}
-                onToggleBookmark={() => toggleBookmark(r)}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       <PreviewDialog resource={preview} onClose={() => setPreview(null)} />
@@ -547,22 +503,12 @@ function PreviewDialog({ resource, onClose }: { resource: LearningResource | nul
   );
 }
 
-function LoadingBlock() {
-  return (
-    <div className="bg-white rounded-2xl border border-[#e5e5e5] p-16 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#e05252]" />
-    </div>
-  );
-}
-
 function EmptyBlock({ icon: Icon, title, message }: { icon: any; title: string; message: string }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e5e5] p-16 text-center">
-      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#f2f0ed] flex items-center justify-center">
-        <Icon className="w-8 h-8 text-[#666]" />
-      </div>
-      <h3 className="text-lg font-bold text-[#1a1a1a] mb-1">{title}</h3>
-      <p className="text-sm text-[#666]">{message}</p>
+    <div className="text-center py-16">
+      <Icon className="w-12 h-12 text-[#666] mx-auto mb-3" />
+      <p className="text-[#1a1a1a] font-medium">{title}</p>
+      <p className="text-sm text-[#666] mt-1">{message}</p>
     </div>
   );
 }

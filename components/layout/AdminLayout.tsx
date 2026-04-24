@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Home, Users, FileText, ClipboardList, Bell, Shield, Sun, Moon,
+  Home, Users, FileText, ClipboardList, Bell, Shield, Sun, Moon, Flag,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -26,6 +26,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { href: '/admin/students', label: 'Students', icon: Users },
     { href: '/admin/certificates', label: 'Certificates', icon: FileText },
     { href: '/admin/applications', label: 'Applications', icon: ClipboardList },
+    { href: '/admin/discussion-reports', label: 'Discussion Reports', icon: Flag },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   ];
 

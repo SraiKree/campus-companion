@@ -227,167 +227,159 @@ export default function StudentAttendancePage() {
         </div>
       </div>
 
-      {/* ── Main Grid ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* ── Left: Course-wise Breakdown ── */}
-        <div className="col-span-7 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#1a1a1a]">Course-wise Breakdown</h2>
-            <button className="text-sm font-bold text-[#e05252] hover:underline">
-              View Detailed Log
-            </button>
+      {/* ── Insight Row: Heatmap · Leave · Campus Path ──────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Activity Heatmap */}
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6">
+          <h3 className="text-base font-bold text-[#1a1a1a] mb-4">Activity Heatmap</h3>
+          <div className="grid grid-cols-7 gap-[6px]">
+            {heatmapCells.map((cell, i) => (
+              <div
+                key={i}
+                className={`aspect-square rounded-[4px] ${
+                  cell === 'present' ? 'bg-emerald-500'
+                  : cell === 'absent' ? 'bg-[#e05252]'
+                  : 'bg-[#f2f0ed]'
+                }`}
+              />
+            ))}
           </div>
-
-          <div className="flex flex-col gap-4">
-            {subject_wise_attendance.map((subject, idx) => {
-              const Icon = SUBJECT_ICONS[idx % SUBJECT_ICONS.length];
-              const subPct = subject.attendance_percentage;
-              return (
-                <div key={idx} className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6 flex flex-col gap-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-[#f2f0ed] flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5 text-[#666]" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-[#1a1a1a] text-base">{subject.subject_name}</p>
-                        <p className="text-xs text-[#666] mt-0.5">{subject.subject_code}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-[#1a1a1a]">
-                        {subject.classes_attended}/{subject.total_classes}
-                      </p>
-                      <p className="text-[10px] font-bold text-[#666] uppercase tracking-wide">Attended</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className={getTextColor(subPct)}>{subPct.toFixed(0)}% Attendance</span>
-                      <span className="text-[#666]">{getStatusLabel(subPct)}</span>
-                    </div>
-                    <div className="h-3 bg-[#f2f0ed] rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${getBarColor(subPct)}`}
-                        style={{ width: `${subPct}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#f2f0ed]">
+            {[
+              { color: 'bg-emerald-500', label: 'Present' },
+              { color: 'bg-[#e05252]', label: 'Absent' },
+              { color: 'bg-[#f2f0ed]', label: 'No Class' },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded-[3px] ${color}`} />
+                <span className="text-xs font-bold text-[#666]">{label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Right: Insights ── */}
-        <div className="col-span-5 flex flex-col gap-6">
-          {/* Activity Heatmap */}
-          <div className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6">
-            <h3 className="text-base font-bold text-[#1a1a1a] mb-4">Activity Heatmap</h3>
-            <div className="grid grid-cols-7 gap-[6px]">
-              {heatmapCells.map((cell, i) => (
-                <div
-                  key={i}
-                  className={`aspect-square rounded-[4px] ${
-                    cell === 'present' ? 'bg-emerald-500'
-                    : cell === 'absent' ? 'bg-[#e05252]'
-                    : 'bg-[#f2f0ed]'
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#f2f0ed]">
-              {[
-                { color: 'bg-emerald-500', label: 'Present' },
-                { color: 'bg-[#e05252]', label: 'Absent' },
-                { color: 'bg-[#f2f0ed]', label: 'No Class' },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <div className={`w-3 h-3 rounded-[3px] ${color}`} />
-                  <span className="text-xs font-bold text-[#666]">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Leave Requests */}
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6 flex flex-col gap-4">
+          <h3 className="text-base font-bold text-[#1a1a1a]">Leave Requests</h3>
 
-          {/* Approved Leaves */}
-          <div className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6 flex flex-col gap-5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-[#1a1a1a]">Leave Requests</h3>
-            </div>
-
-            {leaveRequests.length === 0 ? (
-              <p className="text-sm text-[#666] py-2">No leave requests found.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {leaveRequests.slice(0, 3).map((req) => {
-                  const borderColor =
-                    req.status === 'approved' ? 'border-l-emerald-500'
-                    : req.status === 'rejected' ? 'border-l-[#e05252]'
-                    : 'border-l-amber-500';
-                  const tagColor =
-                    req.status === 'approved' ? 'bg-emerald-50 text-emerald-700'
-                    : req.status === 'rejected' ? 'bg-[#e05252]/10 text-[#e05252]'
-                    : 'bg-amber-50 text-amber-600';
-                  return (
-                    <div
-                      key={req.id}
-                      className={`bg-[#f9f8f6] border border-[#e5e5e5] border-l-4 ${borderColor} rounded-xl flex items-center pl-4 pr-3 py-3 gap-3`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#1a1a1a] truncate">{req.reason}</p>
-                        <p className="text-xs text-[#666] mt-0.5">
-                          {new Date(req.from_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          {' – '}
-                          {new Date(req.to_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${tagColor}`}>
-                        {req.status}
-                      </span>
+          {leaveRequests.length === 0 ? (
+            <p className="text-sm text-[#666] flex-1">No leave requests found.</p>
+          ) : (
+            <div className="flex flex-col gap-3 flex-1">
+              {leaveRequests.slice(0, 3).map((req) => {
+                const borderColor =
+                  req.status === 'approved' ? 'border-l-emerald-500'
+                  : req.status === 'rejected' ? 'border-l-[#e05252]'
+                  : 'border-l-amber-500';
+                const tagColor =
+                  req.status === 'approved' ? 'bg-emerald-50 text-emerald-700'
+                  : req.status === 'rejected' ? 'bg-[#e05252]/10 text-[#e05252]'
+                  : 'bg-amber-50 text-amber-600';
+                return (
+                  <div
+                    key={req.id}
+                    className={`bg-[#f9f8f6] border border-[#e5e5e5] border-l-4 ${borderColor} rounded-xl flex items-center pl-4 pr-3 py-3 gap-3`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#1a1a1a] truncate">{req.reason}</p>
+                      <p className="text-xs text-[#666] mt-0.5">
+                        {new Date(req.from_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {' – '}
+                        {new Date(req.to_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <Link href="/student/leave-request">
-              <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#f2f0ed] hover:bg-[#e5e5e5] transition-colors text-sm font-bold text-[#1a1a1a]">
-                <Plus className="w-4 h-4" />
-                Request New Leave
-              </button>
-            </Link>
-          </div>
-
-          {/* Attendance Tier - "The Clay Path" */}
-          <div className="bg-[#e05252]/5 border border-[#e05252]/15 rounded-2xl p-6 flex flex-col gap-4">
-            <div>
-              <p className="text-xs font-bold text-[#e05252] uppercase tracking-widest mb-1">The Campus Path</p>
-              <p className="text-sm font-bold text-[#1a1a1a]">Current Tier: {currentTier.label}</p>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${tagColor}`}>
+                      {req.status}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            {/* Progress bar */}
-            <div className="relative pt-6">
-              <div className="h-5 bg-[#dce0e2] rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#e05252] to-[#ff7572] transition-all duration-700"
-                  style={{ width: `${Math.min(pct, 100)}%` }}
-                />
-              </div>
-              {/* Tooltip */}
+          )}
+
+          <Link href="/student/leave-request">
+            <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#f2f0ed] hover:bg-[#e5e5e5] transition-colors text-sm font-bold text-[#1a1a1a]">
+              <Plus className="w-4 h-4" />
+              Request New Leave
+            </button>
+          </Link>
+        </div>
+
+        {/* Attendance Tier */}
+        <div className="bg-[#e05252]/5 border border-[#e05252]/15 rounded-2xl p-6 flex flex-col gap-4">
+          <div>
+            <p className="text-xs font-bold text-[#e05252] uppercase tracking-widest mb-1">The Campus Path</p>
+            <p className="text-sm font-bold text-[#1a1a1a]">Current Tier: {currentTier.label}</p>
+          </div>
+          <div className="relative pt-6">
+            <div className="h-5 bg-[#dce0e2] rounded-full overflow-hidden">
               <div
-                className="absolute -top-1 bg-white border border-[#e05252]/20 rounded px-2 py-1 shadow text-[10px] font-bold text-[#e05252]"
-                style={{ left: `calc(${Math.min(pct, 95)}% - 20px)` }}
-              >
-                <p>Current:</p>
-                <p>{pct.toFixed(0)}%</p>
-              </div>
+                className="h-full rounded-full bg-gradient-to-r from-[#e05252] to-[#ff7572] transition-all duration-700"
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
             </div>
-            <p className="text-xs text-[#666] leading-relaxed">
-              {nextTier
-                ? <>You are <strong>{(nextTier.min - pct).toFixed(1)}%</strong> away from reaching <strong>{nextTier.label}</strong>. Keep it up!</>
-                : <>You have reached the highest tier: <strong>Elite Scholar</strong>. Outstanding!</>}
-            </p>
+            <div
+              className="absolute -top-1 bg-white border border-[#e05252]/20 rounded px-2 py-1 shadow text-[10px] font-bold text-[#e05252]"
+              style={{ left: `calc(${Math.min(pct, 90)}% - 20px)` }}
+            >
+              {pct.toFixed(0)}%
+            </div>
           </div>
+          <p className="text-xs text-[#666] leading-relaxed mt-auto">
+            {nextTier
+              ? <>You are <strong>{(nextTier.min - pct).toFixed(1)}%</strong> away from <strong>{nextTier.label}</strong>. Keep it up!</>
+              : <>You have reached the highest tier: <strong>Elite Scholar</strong>. Outstanding!</>}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Course-wise Breakdown (full width, 2-col grid) ────────────────── */}
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-[#1a1a1a]">Course-wise Breakdown</h2>
+          <button className="text-sm font-bold text-[#e05252] hover:underline">
+            View Detailed Log
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {subject_wise_attendance.map((subject, idx) => {
+            const Icon = SUBJECT_ICONS[idx % SUBJECT_ICONS.length];
+            const subPct = subject.attendance_percentage;
+            return (
+              <div key={idx} className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm p-6 flex flex-col gap-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-[#f2f0ed] flex items-center justify-center shrink-0">
+                      <Icon className="w-5 h-5 text-[#666]" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#1a1a1a] text-base">{subject.subject_name}</p>
+                      <p className="text-xs text-[#666] mt-0.5">{subject.subject_code}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#1a1a1a]">
+                      {subject.classes_attended}/{subject.total_classes}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#666] uppercase tracking-wide">Attended</p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className={getTextColor(subPct)}>{subPct.toFixed(0)}% Attendance</span>
+                    <span className="text-[#666]">{getStatusLabel(subPct)}</span>
+                  </div>
+                  <div className="h-3 bg-[#f2f0ed] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${getBarColor(subPct)}`}
+                      style={{ width: `${subPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </StudentLayout>
