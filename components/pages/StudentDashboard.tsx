@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
 import {
   MapPin, Clock, CreditCard, FileText,
-  Heart, UserCircle, DollarSign, Plus, X, GripVertical, Share2, Copy, Check, Building2
+  Heart, UserCircle, DollarSign, Plus, X, GripVertical, Share2, Copy, Check
 } from 'lucide-react';
 import { useStudentDashboard } from '@/hooks/useStudentDashboard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -491,24 +490,6 @@ const StudentDashboard = () => {
   return (
     <StudentLayout>
       <div className="relative">
-        {/* Hostel section (preview mode — visible to all students) */}
-        <Link href="/student/hostel">
-          <div className="mb-6 bg-white rounded-2xl p-6 border border-[#e5e5e5] flex items-center gap-4 hover:border-[#e05252] transition-colors cursor-pointer">
-            <div className="w-12 h-12 rounded-xl bg-[#e05252]/10 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-[#e05252]" />
-            </div>
-            <div className="flex-1">
-              <p className="text-[10px] font-bold text-[#666] uppercase tracking-wider mb-1">
-                Hostel
-              </p>
-              <p className="text-base font-semibold text-[#1a1a1a]">
-                View your room, roommates & mess menu
-              </p>
-            </div>
-            <span className="text-xs font-bold text-[#e05252]">OPEN →</span>
-          </div>
-        </Link>
-
         {/* Dashboard Controls */}
         <div className="flex justify-end gap-2 mb-4">
           <button

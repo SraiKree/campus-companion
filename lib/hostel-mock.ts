@@ -28,6 +28,21 @@ export interface HostelRoom {
   capacity: number;
 }
 
+export interface MockMessMenuRow {
+  day_of_week:
+    | 'Monday'
+    | 'Tuesday'
+    | 'Wednesday'
+    | 'Thursday'
+    | 'Friday'
+    | 'Saturday'
+    | 'Sunday';
+  breakfast: string | null;
+  lunch: string | null;
+  snacks: string | null;
+  dinner: string | null;
+}
+
 export interface HostelComplaint {
   id: string;
   title: string;
@@ -198,6 +213,62 @@ export const MOCK_ROOMS: HostelRoom[] = [
   { id: 'r6', room_no: '203', block: 'B', capacity: 2 },
   { id: 'r7', room_no: '301', block: 'C', capacity: 3 },
   { id: 'r8', room_no: '302', block: 'C', capacity: 2 },
+];
+
+// ────────────────────────────────────────────────────────────────
+// Mess menu (weekly, Mon → Sun)
+// ────────────────────────────────────────────────────────────────
+
+export const MOCK_MESS_MENU: MockMessMenuRow[] = [
+  {
+    day_of_week: 'Monday',
+    breakfast: 'Idli, Sambar, Coconut Chutney, Boiled Egg',
+    lunch:     'Steamed Rice, Toor Dal, Aloo Jeera, Curd, Papad',
+    snacks:    'Samosa, Masala Chai',
+    dinner:    'Chapati, Paneer Butter Masala, Veg Pulao, Gulab Jamun',
+  },
+  {
+    day_of_week: 'Tuesday',
+    breakfast: 'Poha, Bread Toast, Banana, Tea/Coffee',
+    lunch:     'Steamed Rice, Rajma, Jeera Aloo, Cucumber Salad',
+    snacks:    'Vada Pav, Filter Coffee',
+    dinner:    'Chapati, Chicken Curry / Soya Chunks Curry, Rice, Fryums',
+  },
+  {
+    day_of_week: 'Wednesday',
+    breakfast: 'Upma, Coconut Chutney, Boiled Egg',
+    lunch:     'Steamed Rice, Sambar, Bhindi Fry, Curd',
+    snacks:    'Onion Pakora, Tea',
+    dinner:    'Chapati, Egg Curry / Aloo Matar, Rice, Fruit Custard',
+  },
+  {
+    day_of_week: 'Thursday',
+    breakfast: 'Masala Dosa, Sambar, Chutney',
+    lunch:     'Veg Pulao, Dal Tadka, Cabbage Curry, Raita',
+    snacks:    'Bread Pakora, Mint Chutney, Tea',
+    dinner:    'Chapati, Dal Makhani, Rice, Salad',
+  },
+  {
+    day_of_week: 'Friday',
+    breakfast: 'Aloo Paratha, Curd, Pickle',
+    lunch:     'Steamed Rice, Dal Fry, Mix Veg, Papad',
+    snacks:    'Bhel Puri, Lemon Tea',
+    dinner:    'Chapati, Chole, Jeera Rice, Jalebi',
+  },
+  {
+    day_of_week: 'Saturday',
+    breakfast: 'Puri, Aloo Sabzi, Halwa',
+    lunch:     'Veg Biryani, Mirchi Ka Salan, Raita, Salad',
+    snacks:    'Pasta, Fresh Juice',
+    dinner:    'Chapati, Paneer Tikka Masala, Rice, Ice Cream',
+  },
+  {
+    day_of_week: 'Sunday',
+    breakfast: 'Masala Dosa, Sambar, Coconut Chutney',
+    lunch:     'Chicken Biryani / Veg Biryani, Raita, Boiled Egg, Salan',
+    snacks:    'Ice Cream, Cookies',
+    dinner:    'Chapati, Malai Kofta, Rice, Rasmalai',
+  },
 ];
 
 // ────────────────────────────────────────────────────────────────

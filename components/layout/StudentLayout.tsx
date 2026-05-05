@@ -49,7 +49,7 @@ const adminNav = [
 
 const StudentLayout = ({ children }: StudentLayoutProps) => {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme, accent } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { workspace, toggleWorkspace, setDragOffset, dragOffset } = useWorkspace();
   const pathname = usePathname();
 
@@ -101,35 +101,14 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
 
   const isEducation = workspace === 'education';
 
-  // ── Workspace-aware colour tokens ──────────────────────────────────
-  // User-picked accent (if set) overrides the defaults for both workspaces.
-  // Defaults: Education → green, Admin → peach (dark-mode variant in dark theme).
-  const hasCustomAccent = !!accent;
-  const wsAccent = hasCustomAccent
-    ? accent!
-    : isEducation
-      ? '#059669'
-      : (isDark ? '#ff8d89' : '#e05252');
-  const wsSidebarBg = hasCustomAccent
-    ? 'var(--ch-sidebar)'
-    : isEducation
-      ? (isDark ? '#0f1a16' : '#eef6f2')
-      : 'var(--ch-sidebar)';
-  const wsBorderColor = hasCustomAccent
-    ? 'var(--ch-border)'
-    : isEducation
-      ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
-      : 'var(--ch-border)';
-  const wsNavActive = hasCustomAccent
-    ? 'var(--ch-nav-active)'
-    : isEducation
-      ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
-      : 'var(--ch-nav-active)';
-  const wsHover = hasCustomAccent
-    ? 'var(--ch-hover)'
-    : isEducation
-      ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
-      : 'var(--ch-hover)';
+  // ── Theme tokens ─────────────────────────────────────────────────
+  // Every accent-derived color reads from a single CSS variable so the
+  // entire layout follows whatever primary color is active.
+  const wsAccent      = 'var(--ch-accent)';
+  const wsSidebarBg   = 'var(--ch-sidebar)';
+  const wsBorderColor = 'var(--ch-border)';
+  const wsNavActive   = 'var(--ch-accent-soft)';
+  const wsHover       = 'var(--ch-accent-softer)';
 
   return (
     <div
@@ -306,17 +285,9 @@ const StudentLayout = ({ children }: StudentLayoutProps) => {
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
                 style={{
-                  backgroundColor: hasCustomAccent
-                    ? 'var(--ch-accent-soft)'
-                    : isEducation
-                      ? 'rgba(5,150,105,0.08)'
-                      : 'rgba(224,82,82,0.08)',
+                  backgroundColor: 'var(--ch-accent-soft)',
                   color: wsAccent,
-                  border: `1px solid ${hasCustomAccent
-                    ? 'var(--ch-accent-soft)'
-                    : isEducation
-                      ? 'rgba(5,150,105,0.2)'
-                      : 'rgba(224,82,82,0.2)'}`,
+                  border: '1px solid var(--ch-accent-soft)',
                 }}
               >
                 {isEducation ? 'Learning Mode' : 'Admin Mode'}

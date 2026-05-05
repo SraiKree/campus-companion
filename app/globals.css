@@ -51,7 +51,11 @@
   --ch-text:           #1a1a1a;
   --ch-muted:          #666666;
   --ch-accent:         #e05252;
-  --ch-accent-soft:    rgba(224, 82, 82, 0.08);
+  --ch-accent-rgb:     224, 82, 82;
+  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.08);
+  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.04);
+  --ch-accent-strong:  #c44545;
+  --ch-on-accent:      #ffffff;
   --ch-input:          #ffffff;
   --ch-muted-bg:       #f2f0ed;
   --ch-hover:          rgba(255, 255, 255, 0.60);
@@ -70,7 +74,11 @@
   --ch-text:           #ffffff;
   --ch-muted:          #adaaaa;
   --ch-accent:         #ff8d89;
-  --ch-accent-soft:    rgba(255, 141, 137, 0.10);
+  --ch-accent-rgb:     255, 141, 137;
+  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.10);
+  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.05);
+  --ch-accent-strong:  #ff706b;
+  --ch-on-accent:      #1a1a1a;
   --ch-input:          #131313;
   --ch-muted-bg:       #20201f;
   --ch-hover:          rgba(255, 255, 255, 0.04);
@@ -126,7 +134,7 @@
 
 /* ── Smooth colour transitions for student/faculty pages ─────────────────── */
 .ch-themed,
-.ch-themed *:not(.no-transition):not(.no-transition *) {
+.ch-themed *:not(.no-transition):not(.no-transition *):not(.animate-blink) {
   transition:
     background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
     color            0.35s cubic-bezier(0.4, 0, 0.2, 1),
@@ -159,6 +167,8 @@
 :root[style*="--ch-accent"] .ch-themed .text-\[\#e05252\]   { color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .bg-\[\#e05252\]     { background-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .border-\[\#e05252\] { border-color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .bg-\[\#e05252\]\/10 { background-color: rgba(var(--ch-accent-rgb), 0.10) !important; }
+:root[style*="--ch-accent"] .ch-themed .bg-\[\#e05252\]\/20 { background-color: rgba(var(--ch-accent-rgb), 0.20) !important; }
 :root[style*="--ch-accent"] .ch-themed .text-\[\#c44545\]   { color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .bg-\[\#c44545\]     { background-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .border-\[\#c44545\] { border-color: var(--ch-accent) !important; }
@@ -193,5 +203,20 @@
   }
   .shadow-elevated {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  }
+  .animate-blink {
+    animation: blink 1.4s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.92);
   }
 }
