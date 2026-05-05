@@ -43,7 +43,11 @@ function mix(hex: string, baseHex: string, weight: number): string {
 
 const ACCENT_VAR_KEYS = [
   '--ch-accent',
+  '--ch-accent-rgb',
   '--ch-accent-soft',
+  '--ch-accent-softer',
+  '--ch-accent-strong',
+  '--ch-on-accent',
   '--ch-bg',
   '--ch-sidebar',
   '--ch-card',
@@ -52,11 +56,26 @@ const ACCENT_VAR_KEYS = [
   '--ch-nav-active',
 ] as const;
 
+// Pick black or white text for legibility against any accent fill.
+function pickOnAccent(r: number, g: number, b: number): string {
+  // Relative luminance per WCAG.
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return L > 0.55 ? '#1a1a1a' : '#ffffff';
+}
+
 function applyAccent(hex: string, isDark: boolean) {
   const root = document.documentElement;
   const [r, g, b] = hexToRgb(hex);
   root.style.setProperty('--ch-accent', hex);
+  root.style.setProperty('--ch-accent-rgb', `${r}, ${g}, ${b}`);
   root.style.setProperty('--ch-accent-soft', `rgba(${r},${g},${b},${isDark ? 0.12 : 0.08})`);
+  root.style.setProperty('--ch-accent-softer', `rgba(${r},${g},${b},${isDark ? 0.06 : 0.04})`);
+  root.style.setProperty('--ch-accent-strong', mix(hex, '#000000', 0.85));
+  root.style.setProperty('--ch-on-accent', pickOnAccent(r, g, b));
 
   if (isDark) {
     root.style.setProperty('--ch-bg', mix(hex, '#0e0e0e', 0.05));

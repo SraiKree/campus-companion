@@ -40,7 +40,7 @@ No test runner is configured — there are no test files currently in the projec
 - Admin client: `lib/supabase-admin.ts` (uses `SUPABASE_SERVICE_ROLE_KEY`, server-side only).
 - Key tables: `students25`, `profiles`, `user_roles`, `attendance`, `grades`, `assignments`, `timetable`, `leave_requests`, `subjects`, `announcements`, `student_activity_log`, `student_login_sessions`.
 - Custom view: `student_attendance_summary`. RPC function: `get_student_attendance_by_date_range()`.
-- SQL schema files in repo root document the full database structure.
+- All SQL schema and seed files live in the `sql/` folder (one file per feature, e.g. `sql/hostel_schema.sql`).
 
 ### Component Patterns
 
