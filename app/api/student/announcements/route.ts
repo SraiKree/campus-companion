@@ -33,16 +33,16 @@ async function authenticateStudent(request: NextRequest) {
     throw { status: 401, message: 'Unauthorized' };
   }
 
-  const { data: roleData } = await authClient
+  const { data: roleRows } = await authClient
     .from('user_roles')
     .select('role')
-    .eq('user_id', user.id)
-    .single();
+    .eq('user_id', user.id);
 
   const roleFromMetadata = (user.user_metadata as any)?.role;
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
 
-  if (role !== 'student') {
+  if (!roles.includes('student')) {
     throw { status: 403, message: 'Forbidden' };
   }
 

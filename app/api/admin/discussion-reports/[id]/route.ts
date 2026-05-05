@@ -16,13 +16,15 @@ async function authenticateAdmin(request: Request) {
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) return null;
 
-  const { data: roleRow } = await supabase
+  const { data: roleRows } = await supabase
     .from('user_roles')
     .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
+    .eq('user_id', user.id);
 
-  if (roleRow?.role !== 'admin') return null;
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  const metaRole = (user.user_metadata as any)?.role;
+  if (metaRole) roles.push(String(metaRole).toLowerCase());
+  if (!roles.includes('admin')) return null;
   return user;
 }
 

@@ -30,11 +30,11 @@ export async function authenticateClub(request: NextRequest): Promise<Authentica
   if (error || !user) throw { status: 401, message: 'Unauthorized' };
 
   const roleFromMetadata = (user.user_metadata as any)?.role;
-  const { data: roleData } = await authClient
-    .from('user_roles').select('role').eq('user_id', user.id).single();
-
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'club') throw { status: 403, message: 'Forbidden' };
+  const { data: roleRows } = await authClient
+    .from('user_roles').select('role').eq('user_id', user.id);
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
+  if (!roles.includes('club')) throw { status: 403, message: 'Forbidden' };
 
   const { data: club, error: clubErr } = await supabaseAdmin
     .from('clubs')

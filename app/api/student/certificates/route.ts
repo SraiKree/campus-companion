@@ -30,14 +30,14 @@ async function authenticateStudent(request: NextRequest) {
   }
 
   const roleFromMetadata = (user.user_metadata as any)?.role;
-  const { data: roleData } = await authClient
+  const { data: roleRows } = await authClient
     .from('user_roles')
     .select('role')
-    .eq('user_id', user.id)
-    .single();
+    .eq('user_id', user.id);
 
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'student') {
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
+  if (!roles.includes('student')) {
     throw { status: 403, message: 'Forbidden' };
   }
 

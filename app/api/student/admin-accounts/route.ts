@@ -23,10 +23,11 @@ async function authenticateStudent(request: NextRequest) {
   if (error || !user) throw { status: 401, message: 'Unauthorized' };
 
   const metaRole = (user.user_metadata as Record<string, unknown> | undefined)?.role;
-  const { data: roleData } = await authClient
-    .from('user_roles').select('role').eq('user_id', user.id).single();
-  const role = (roleData?.role || metaRole || '').toString().toLowerCase();
-  if (role !== 'student') throw { status: 403, message: 'Forbidden' };
+  const { data: roleRows } = await authClient
+    .from('user_roles').select('role').eq('user_id', user.id);
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (metaRole) roles.push(String(metaRole).toLowerCase());
+  if (!roles.includes('student')) throw { status: 403, message: 'Forbidden' };
 
   return { user };
 }

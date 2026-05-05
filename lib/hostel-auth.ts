@@ -29,20 +29,14 @@ export async function authenticateHostelAdmin(
     throw { status: 401, message: 'Unauthorized' };
   }
 
-  // Role check: metadata first, fall back to user_roles table
   const metadataRole = (user.user_metadata as any)?.role;
-  let role = typeof metadataRole === 'string' ? metadataRole.toLowerCase() : '';
-
-  if (role !== 'hostel') {
-    const { data: roleRow } = await authClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    role = (roleRow?.role ?? '').toString().toLowerCase();
-  }
-
-  if (role !== 'hostel') {
+  const { data: roleRows } = await authClient
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id);
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (metadataRole) roles.push(String(metadataRole).toLowerCase());
+  if (!roles.includes('hostel')) {
     throw { status: 403, message: 'Forbidden' };
   }
 
