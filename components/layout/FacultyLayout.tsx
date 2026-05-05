@@ -120,7 +120,6 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
         style={{
           backgroundColor: wsSidebarBg,
           borderRight: `1px solid ${wsBorderColor}`,
-          borderLeft: `3px solid ${wsAccent}`,
           transform: dragOffset ? `translateX(${dragOffset * 0.15}px)` : undefined,
           transition: dragOffset ? 'none' : 'transform 0.3s ease-out, background-color 0.35s ease, border-color 0.35s ease',
           touchAction: 'pan-y',
@@ -197,13 +196,19 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
         </nav>
 
         {/* Swipe hint */}
-        <div
-          className="text-center py-2"
-          style={{ opacity: 0.4 }}
-        >
-          <p className="text-[10px] font-medium" style={{ color: 'var(--ch-muted)' }}>
-            Swipe sidebar or press Ctrl+Shift+Arrow
-          </p>
+        <div className="flex justify-center py-2">
+          <div
+            className="inline-flex items-center rounded-full border px-3 py-1.5 backdrop-blur-sm"
+            style={{
+              backgroundColor: 'var(--ch-card)',
+              borderColor: 'var(--ch-border)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+            }}
+          >
+            <p className="text-[10px] font-semibold tracking-wide" style={{ color: 'var(--ch-text)' }}>
+              Swipe sidebar or press Ctrl+Shift+Arrow
+            </p>
+          </div>
         </div>
 
         {/* User Profile */}
