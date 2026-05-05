@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, Calendar, Clock, CalendarDays,
-  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare, Trophy, Library, Mail,
+  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare, Trophy, Library, Mail, Briefcase,
+  Wallet, Award, FlaskConical, FileSignature, TestTube2, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -30,7 +31,12 @@ const educationNav = [
   { href: '/faculty/academic-planning', label: 'Academic Planning', icon: CalendarDays },
   { href: '/faculty/grades', label: 'Grades', icon: BookOpen },
   { href: '/faculty/assignments', label: 'Assignments', icon: FileText },
+  { href: '/faculty/lab-evaluations', label: 'Lab Evaluations', icon: TestTube2 },
+  { href: '/faculty/lor', label: 'LOR Requests', icon: FileSignature },
+  { href: '/faculty/project-approvals', label: 'Project Approvals', icon: ClipboardCheck },
+  { href: '/faculty/rnd', label: 'R & D', icon: FlaskConical },
   { href: '/faculty/learning-resources', label: 'Learning Resources', icon: Library },
+  { href: '/faculty/library', label: 'Library Catalog', icon: Library },
 ];
 
 const adminNav = [
@@ -39,6 +45,10 @@ const adminNav = [
   { href: '/faculty/leave-requests', label: 'Leave Requests', icon: Mail },
   { href: '/faculty/sports', label: 'Sports & Activities', icon: Trophy },
   { href: '/faculty/complaints', label: 'Complaints', icon: MessageSquare },
+  { href: '/faculty/payroll', label: 'Payroll', icon: Wallet },
+  { href: '/faculty/incentive', label: 'Incentives', icon: Award },
+  { href: '/faculty/events-attended', label: 'Events Attended', icon: CalendarDays },
+  { href: '/faculty/hr-profile', label: 'My HR Profile', icon: Briefcase },
   { href: '/faculty/profile', label: 'Profile', icon: UserCircle },
 ];
 

@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus, Building2,
   Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library, Mail, Bus, Briefcase,
+  FileSignature, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -29,6 +30,8 @@ const educationNav = [
   { href: '/student/courses', label: 'Courses', icon: BookOpen },
   { href: '/student/attendance', label: 'Attendance', icon: Calendar },
   { href: '/student/academic-planning', label: 'Academic Planning', icon: CalendarDays },
+  { href: '/student/projects', label: 'Projects', icon: ClipboardCheck },
+  { href: '/student/lor', label: 'LOR Requests', icon: FileSignature },
   { href: '/student/learning-resources', label: 'Learning Resources', icon: Library },
   { href: '/student/announcements', label: 'Announcements', icon: Users },
 ];
