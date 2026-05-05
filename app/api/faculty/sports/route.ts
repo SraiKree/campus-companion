@@ -22,7 +22,7 @@ async function authenticateFaculty(request: NextRequest) {
     .from('user_roles').select('role').eq('user_id', user.id).single();
 
   const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'faculty') throw { status: 403, message: 'Forbidden' };
+  if (role !== 'faculty' && role !== 'sport_admin') throw { status: 403, message: 'Forbidden' };
 
   return { user };
 }
