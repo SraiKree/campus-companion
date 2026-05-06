@@ -47,7 +47,9 @@
   --ch-header:         rgba(249, 248, 246, 0.80);
   --ch-card:           #ffffff;
   --ch-card-2:         #f9f8f6;
+  --ch-elevated:       #ffffff;
   --ch-border:         #e5e5e5;
+  --ch-border-strong:  rgba(0, 0, 0, 0.12);
   --ch-text:           #1a1a1a;
   --ch-muted:          #666666;
   --ch-accent:         #e05252;
@@ -62,29 +64,62 @@
   --ch-nav-active:     #ffffff;
   --ch-divider:        #e5e5e5;
   --ch-invert-text:    #ffffff;
+  --ch-ring:           rgba(var(--ch-accent-rgb), 0.20);
+  --ch-shadow-card:    0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ch-shadow-elevated: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .dark {
-  --ch-bg:             #0e0e0e;
-  --ch-sidebar:        #131313;
-  --ch-header:         rgba(14, 14, 14, 0.80);
-  --ch-card:           #1a1a1a;
-  --ch-card-2:         #131313;
-  --ch-border:         rgba(255, 255, 255, 0.07);
-  --ch-text:           #ffffff;
-  --ch-muted:          #adaaaa;
+  --ch-header:         rgba(10, 10, 12, 0.78);
+  --ch-card-2:         #16161a;
+  --ch-border:         rgba(255, 255, 255, 0.10);
+  --ch-border-strong:  rgba(255, 255, 255, 0.18);
+  --ch-text:           #f5f5f5;
+  --ch-muted:          #b8b5b5;
+  --ch-input:          #1a1a1d;
+  --ch-divider:        rgba(255, 255, 255, 0.12);
+  --ch-invert-text:    #1a1a1a;
+  --ch-ring:           rgba(var(--ch-accent-rgb), 0.40);
+  --ch-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --ch-shadow-elevated: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* Shadcn HSL token shims — give Radix/Shadcn primitives proper dark fallbacks */
+  --background:           0 0% 5%;
+  --foreground:           0 0% 96%;
+  --card:                 240 4% 11%;
+  --card-foreground:      0 0% 96%;
+  --popover:              240 4% 14%;
+  --popover-foreground:   0 0% 96%;
+  --primary:              0 0% 96%;
+  --primary-foreground:   0 0% 5%;
+  --secondary:            240 3% 14%;
+  --secondary-foreground: 0 0% 96%;
+  --muted:                240 3% 14%;
+  --muted-foreground:     0 0% 70%;
+  --border:               0 0% 18%;
+  --input:                240 3% 14%;
+  --ring:                 0 0% 96%;
+}
+
+/* Dark-mode accent + layered surface defaults — only when no custom accent is
+   set on :root. When AccentPicker writes to :root inline, the cascaded values win.
+   Two selectors: one for when .dark sits on :root itself (covers Radix portals),
+   one for the per-page .ch-themed.dark wrapper. */
+:root:not([style*="--ch-accent"]).dark,
+:root:not([style*="--ch-accent"]) .dark {
+  --ch-bg:             #0a0a0c;
+  --ch-sidebar:        #16161a;
+  --ch-card:           #1d1d20;
+  --ch-elevated:       #26262a;
   --ch-accent:         #ff8d89;
   --ch-accent-rgb:     255, 141, 137;
-  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.10);
-  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.05);
+  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.12);
+  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.06);
   --ch-accent-strong:  #ff706b;
   --ch-on-accent:      #1a1a1a;
-  --ch-input:          #131313;
-  --ch-muted-bg:       #20201f;
-  --ch-hover:          rgba(255, 255, 255, 0.04);
-  --ch-nav-active:     #262626;
-  --ch-divider:        rgba(255, 255, 255, 0.08);
-  --ch-invert-text:    #1a1a1a;
+  --ch-muted-bg:       #232328;
+  --ch-hover:          rgba(255, 255, 255, 0.06);
+  --ch-nav-active:     #2c2c30;
 }
 
 /* ── Workspace nav directional slide animations ───────────────────────────── */
@@ -179,17 +214,127 @@
 :root[style*="--ch-accent"] .ch-themed .focus-visible\:border-\[\#e05252\]:focus-visible { border-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .focus\:border-\[\#c44545\]:focus { border-color: var(--ch-accent) !important; }
 
-/* Card shadows in dark mode */
+/* Card shadows in dark mode — token-driven so they stay accent-agnostic */
 .dark .shadow-sm,
-.dark .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+.dark .shadow      { box-shadow: var(--ch-shadow-card)     !important; }
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl,
+.dark .shadow-soft,
+.dark .shadow-elevated { box-shadow: var(--ch-shadow-elevated) !important; }
 
 /* Dividers / separators */
 .dark .divide-\[\#f2f0ed\] > * + * { border-color: var(--ch-border) !important; }
 .dark .divide-y > * + * { border-color: var(--ch-border) !important; }
 
-/* Focus rings */
-.dark input:focus,
-.dark textarea:focus { outline-color: var(--ch-accent); }
+/* ── Dark-mode visual hierarchy ──────────────────────────────────────────────
+   All rules below use only --ch-* tokens, so any chosen accent flows through. */
+
+/* Tables: clearer headers, separated rows, hover feedback */
+.dark .ch-themed table { border-color: var(--ch-border); }
+.dark .ch-themed table thead tr,
+.dark .ch-themed table thead th {
+  background-color: var(--ch-muted-bg);
+  color: var(--ch-text);
+  border-color: var(--ch-border) !important;
+}
+.dark .ch-themed table tbody tr   { border-color: var(--ch-border) !important; }
+.dark .ch-themed table tbody tr:hover { background-color: var(--ch-hover); }
+.dark .ch-themed table td,
+.dark .ch-themed table th         { border-color: var(--ch-border); }
+
+/* Inputs / textareas / selects: stand out from card surface, accent focus ring */
+.dark .ch-themed input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.dark .ch-themed textarea,
+.dark .ch-themed select {
+  background-color: var(--ch-input);
+  border-color: var(--ch-border);
+  color: var(--ch-text);
+}
+.dark .ch-themed input::placeholder,
+.dark .ch-themed textarea::placeholder {
+  color: var(--ch-muted);
+  opacity: 0.75;
+}
+.dark .ch-themed input:focus-visible,
+.dark .ch-themed textarea:focus-visible,
+.dark .ch-themed select:focus-visible,
+.dark .ch-themed input:focus,
+.dark .ch-themed textarea:focus,
+.dark .ch-themed select:focus {
+  border-color: var(--ch-accent) !important;
+  box-shadow: 0 0 0 3px var(--ch-ring);
+  outline: none;
+}
+
+/* Ghost / outline buttons: keep text legible, give hover state */
+.dark .ch-themed button:hover { transition: background-color 0.18s ease, color 0.18s ease; }
+.dark .ch-themed [class*="variant-ghost"]:hover,
+.dark .ch-themed .hover\:bg-accent:hover {
+  background-color: var(--ch-hover) !important;
+  color: var(--ch-text) !important;
+}
+
+/* Modals / dialogs / popovers / dropdowns: elevated surface + soft shadow */
+.dark [role="dialog"][data-state="open"],
+.dark [role="alertdialog"][data-state="open"],
+.dark [data-radix-popper-content-wrapper] > * {
+  background-color: var(--ch-elevated) !important;
+  border: 1px solid var(--ch-border) !important;
+  box-shadow: var(--ch-shadow-elevated) !important;
+  color: var(--ch-text);
+}
+.dark [data-radix-dialog-overlay],
+.dark [data-radix-alert-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* Generic ch-themed cards rounded with white-ish bg get card surface + shadow */
+.dark .ch-themed .rounded-xl,
+.dark .ch-themed .rounded-2xl,
+.dark .ch-themed .rounded-3xl {
+  border-color: var(--ch-border);
+}
+
+/* Status indicator pills: keep readable when background tint is dim */
+.dark .ch-themed .bg-green-100,
+.dark .ch-themed .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.16) !important; }
+.dark .ch-themed .text-green-700,
+.dark .ch-themed .text-green-800,
+.dark .ch-themed .text-emerald-700,
+.dark .ch-themed .text-emerald-800 { color: #4ade80 !important; }
+.dark .ch-themed .bg-red-100      { background-color: rgba(239, 68, 68, 0.18) !important; }
+.dark .ch-themed .text-red-700,
+.dark .ch-themed .text-red-800    { color: #fca5a5 !important; }
+.dark .ch-themed .bg-yellow-100,
+.dark .ch-themed .bg-amber-100    { background-color: rgba(245, 158, 11, 0.18) !important; }
+.dark .ch-themed .text-yellow-700,
+.dark .ch-themed .text-yellow-800,
+.dark .ch-themed .text-amber-700,
+.dark .ch-themed .text-amber-800  { color: #fcd34d !important; }
+.dark .ch-themed .bg-blue-100     { background-color: rgba(59, 130, 246, 0.18) !important; }
+.dark .ch-themed .text-blue-700,
+.dark .ch-themed .text-blue-800   { color: #93c5fd !important; }
+
+/* Scrollbar polish in dark — accent tint on hover for affordance */
+.dark ::-webkit-scrollbar        { width: 10px; height: 10px; }
+.dark ::-webkit-scrollbar-track  { background: var(--ch-bg); }
+.dark ::-webkit-scrollbar-thumb  {
+  background: var(--ch-border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--ch-bg);
+}
+.dark ::-webkit-scrollbar-thumb:hover { background: var(--ch-accent); }
+.dark * { scrollbar-color: var(--ch-border-strong) var(--ch-bg); }
+
+/* Smooth theme transitions on body (covers app-wide colour swap) */
+body {
+  transition:
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color            0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 @layer utilities {
   .gradient-yellow {

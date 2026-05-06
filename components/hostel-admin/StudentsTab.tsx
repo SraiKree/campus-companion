@@ -146,7 +146,12 @@ export default function StudentsTab({
               <tbody>
                 {filtered.map(s => (
                   <tr key={s.id} className="border-t" style={{ borderColor: 'var(--ch-border)' }}>
-                    <td className="p-4 font-medium" style={{ color: 'var(--ch-text)' }}>{s.name}</td>
+                    <td
+                      className="p-4 font-heading font-semibold text-base"
+                      style={{ color: 'var(--ch-text)' }}
+                    >
+                      {s.name}
+                    </td>
                     <td className="p-4" style={{ color: 'var(--ch-muted)' }}>{s.roll_number}</td>
                     {status === 'Active' ? (
                       <>
@@ -204,7 +209,12 @@ export default function StudentsTab({
           {selected && (
             <>
               <DialogHeader>
-                <DialogTitle style={{ color: 'var(--ch-text)' }}>{selected.name}</DialogTitle>
+                <DialogTitle
+                  className="font-heading font-bold text-xl"
+                  style={{ color: 'var(--ch-text)' }}
+                >
+                  {selected.name}
+                </DialogTitle>
                 <DialogDescription style={{ color: 'var(--ch-muted)' }}>
                   {selected.roll_number} • {selected.department} • Year {selected.year}
                 </DialogDescription>

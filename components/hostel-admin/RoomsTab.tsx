@@ -243,7 +243,10 @@ export default function RoomsTab({ rooms, students, blocks }: RoomsTabProps) {
                           {o.name.charAt(0)}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium" style={{ color: 'var(--ch-text)' }}>
+                          <p
+                            className="font-heading font-semibold text-base"
+                            style={{ color: 'var(--ch-text)' }}
+                          >
                             {o.name}
                           </p>
                           <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>

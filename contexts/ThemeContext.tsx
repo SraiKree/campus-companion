@@ -51,9 +51,11 @@ const ACCENT_VAR_KEYS = [
   '--ch-bg',
   '--ch-sidebar',
   '--ch-card',
+  '--ch-elevated',
   '--ch-muted-bg',
   '--ch-hover',
   '--ch-nav-active',
+  '--ch-ring',
 ] as const;
 
 // Pick black or white text for legibility against any accent fill.
@@ -72,24 +74,29 @@ function applyAccent(hex: string, isDark: boolean) {
   const [r, g, b] = hexToRgb(hex);
   root.style.setProperty('--ch-accent', hex);
   root.style.setProperty('--ch-accent-rgb', `${r}, ${g}, ${b}`);
-  root.style.setProperty('--ch-accent-soft', `rgba(${r},${g},${b},${isDark ? 0.12 : 0.08})`);
-  root.style.setProperty('--ch-accent-softer', `rgba(${r},${g},${b},${isDark ? 0.06 : 0.04})`);
+  root.style.setProperty('--ch-accent-soft', `rgba(${r},${g},${b},${isDark ? 0.14 : 0.08})`);
+  root.style.setProperty('--ch-accent-softer', `rgba(${r},${g},${b},${isDark ? 0.07 : 0.04})`);
   root.style.setProperty('--ch-accent-strong', mix(hex, '#000000', 0.85));
   root.style.setProperty('--ch-on-accent', pickOnAccent(r, g, b));
+  root.style.setProperty('--ch-ring', `rgba(${r},${g},${b},${isDark ? 0.40 : 0.20})`);
 
   if (isDark) {
-    root.style.setProperty('--ch-bg', mix(hex, '#0e0e0e', 0.05));
-    root.style.setProperty('--ch-sidebar', mix(hex, '#131313', 0.07));
-    root.style.setProperty('--ch-card', mix(hex, '#1a1a1a', 0.05));
-    root.style.setProperty('--ch-muted-bg', mix(hex, '#20201f', 0.07));
-    root.style.setProperty('--ch-hover', `rgba(${r},${g},${b},0.06)`);
-    root.style.setProperty('--ch-nav-active', mix(hex, '#262626', 0.10));
+    // Layered dark surfaces — each step ~3-4% lighter than the previous so
+    // bg / sidebar / card / elevated are visually distinct regardless of accent.
+    root.style.setProperty('--ch-bg',         mix(hex, '#0a0a0c', 0.06));
+    root.style.setProperty('--ch-sidebar',    mix(hex, '#16161a', 0.08));
+    root.style.setProperty('--ch-card',       mix(hex, '#1d1d20', 0.07));
+    root.style.setProperty('--ch-elevated',   mix(hex, '#26262a', 0.08));
+    root.style.setProperty('--ch-muted-bg',   mix(hex, '#232328', 0.08));
+    root.style.setProperty('--ch-hover',      `rgba(${r},${g},${b},0.10)`);
+    root.style.setProperty('--ch-nav-active', mix(hex, '#2c2c30', 0.12));
   } else {
-    root.style.setProperty('--ch-bg', mix(hex, '#f9f8f6', 0.10));
-    root.style.setProperty('--ch-sidebar', mix(hex, '#f2f0ed', 0.16));
-    root.style.setProperty('--ch-card', mix(hex, '#ffffff', 0.02));
-    root.style.setProperty('--ch-muted-bg', mix(hex, '#f2f0ed', 0.12));
-    root.style.setProperty('--ch-hover', `rgba(${r},${g},${b},0.05)`);
+    root.style.setProperty('--ch-bg',         mix(hex, '#f9f8f6', 0.10));
+    root.style.setProperty('--ch-sidebar',    mix(hex, '#f2f0ed', 0.16));
+    root.style.setProperty('--ch-card',       mix(hex, '#ffffff', 0.02));
+    root.style.setProperty('--ch-elevated',   '#ffffff');
+    root.style.setProperty('--ch-muted-bg',   mix(hex, '#f2f0ed', 0.12));
+    root.style.setProperty('--ch-hover',      `rgba(${r},${g},${b},0.05)`);
     root.style.setProperty('--ch-nav-active', mix(hex, '#ffffff', 0.06));
   }
 }
@@ -114,6 +121,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (accent) applyAccent(accent, theme === 'dark');
     else clearAccent();
   }, [accent, theme]);
+
+  // Mirror the theme onto <html> so Radix-portalled primitives (dialogs,
+  // popovers, tooltips, dropdowns) outside the per-page .dark wrapper still
+  // pick up dark-mode tokens.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {
