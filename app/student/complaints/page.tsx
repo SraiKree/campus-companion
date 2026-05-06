@@ -13,6 +13,20 @@ import {
   type ComplaintCategory, type Department,
 } from '@/lib/complaints';
 
+// Sub-categories shown when the student picks "Hostel" — these mirror the
+// problem types previously offered on the hostel complaint flow.
+const HOSTEL_PROBLEMS = [
+  'Plumbing',
+  'Electrical',
+  'Internet',
+  'Cleanliness',
+  'Furniture',
+  'Mess / Food',
+  'Security',
+  'Other',
+] as const;
+type HostelProblem = (typeof HOSTEL_PROBLEMS)[number];
+
 import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +41,7 @@ export default function StudentComplaintsPage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ComplaintCategory | ''>('');
   const [department, setDepartment] = useState<Department | ''>('');
+  const [hostelProblem, setHostelProblem] = useState<HostelProblem | ''>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -91,9 +106,19 @@ export default function StudentComplaintsPage() {
     return urls;
   };
 
+  const isHostel = category === 'Hostel';
+
   const handleSubmit = async () => {
-    if (!title.trim() || !description.trim() || !category || !department) {
+    if (!title.trim() || !description.trim() || !category) {
       alert('Please fill in all required fields');
+      return;
+    }
+    if (isHostel && !hostelProblem) {
+      alert('Please select the hostel problem');
+      return;
+    }
+    if (!isHostel && !department) {
+      alert('Please select your department');
       return;
     }
 
@@ -105,6 +130,18 @@ export default function StudentComplaintsPage() {
 
       const uploadedUrls = await uploadImages();
 
+      // For hostel complaints we don't ask for a department; the API still
+      // requires one of DEPARTMENTS, so we attach the student's enrolled
+      // department from their profile, and tag the problem in the title.
+      const submitDepartment = (isHostel
+        ? (user?.department && DEPARTMENTS.includes(user.department as Department)
+            ? user.department
+            : DEPARTMENTS[0])
+        : department) as Department;
+      const submitTitle = isHostel
+        ? `[Hostel · ${hostelProblem}] ${title.trim()}`
+        : title.trim();
+
       const res = await fetch('/api/student/complaints', {
         method: 'POST',
         headers: {
@@ -112,10 +149,10 @@ export default function StudentComplaintsPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title: title.trim(),
+          title: submitTitle,
           description: description.trim(),
           category,
-          department,
+          department: submitDepartment,
           image_urls: uploadedUrls,
         }),
       });
@@ -132,6 +169,7 @@ export default function StudentComplaintsPage() {
       setDescription('');
       setCategory('');
       setDepartment('');
+      setHostelProblem('');
       setImageFiles([]);
       setImagePreviews([]);
     } catch (err) {
@@ -271,22 +309,41 @@ export default function StudentComplaintsPage() {
               </select>
             </div>
 
-            <div>
-              <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>
-                Department <span className="text-[#e05252]">*</span>
-              </label>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value as Department)}
-                className="w-full h-10 rounded-md border px-3 text-sm"
-                style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
-              >
-                <option value="">Select department</option>
-                {DEPARTMENTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
+            {isHostel ? (
+              <div>
+                <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>
+                  Problem <span className="text-[#e05252]">*</span>
+                </label>
+                <select
+                  value={hostelProblem}
+                  onChange={(e) => setHostelProblem(e.target.value as HostelProblem)}
+                  className="w-full h-10 rounded-md border px-3 text-sm"
+                  style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
+                >
+                  <option value="">Select problem</option>
+                  {HOSTEL_PROBLEMS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="text-sm font-medium block mb-1.5" style={{ color: 'var(--ch-text)' }}>
+                  Department <span className="text-[#e05252]">*</span>
+                </label>
+                <select
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value as Department)}
+                  className="w-full h-10 rounded-md border px-3 text-sm"
+                  style={{ backgroundColor: 'var(--ch-bg)', borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
+                >
+                  <option value="">Select department</option>
+                  {DEPARTMENTS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Image Upload */}
@@ -329,7 +386,13 @@ export default function StudentComplaintsPage() {
 
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !title.trim() || !description.trim() || !category || !department}
+            disabled={
+              submitting ||
+              !title.trim() ||
+              !description.trim() ||
+              !category ||
+              (isHostel ? !hostelProblem : !department)
+            }
             className="w-full bg-[#e05252] hover:bg-[#c94545] text-white gap-2 h-11"
           >
             <Send className="w-4 h-4" />

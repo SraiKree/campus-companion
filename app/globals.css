@@ -70,18 +70,18 @@
 }
 
 .dark {
-  --ch-header:         rgba(10, 10, 12, 0.78);
+  --ch-header:         rgba(10, 10, 12, 0.82);
   --ch-card-2:         #16161a;
-  --ch-border:         rgba(255, 255, 255, 0.10);
-  --ch-border-strong:  rgba(255, 255, 255, 0.18);
-  --ch-text:           #f5f5f5;
-  --ch-muted:          #b8b5b5;
-  --ch-input:          #1a1a1d;
-  --ch-divider:        rgba(255, 255, 255, 0.12);
+  --ch-border:         rgba(255, 255, 255, 0.13);
+  --ch-border-strong:  rgba(255, 255, 255, 0.22);
+  --ch-text:           #f7f7f8;
+  --ch-muted:          #c8c5c5;
+  --ch-input:          #1c1c20;
+  --ch-divider:        rgba(255, 255, 255, 0.14);
   --ch-invert-text:    #1a1a1a;
-  --ch-ring:           rgba(var(--ch-accent-rgb), 0.40);
-  --ch-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --ch-shadow-elevated: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --ch-ring:           rgba(var(--ch-accent-rgb), 0.42);
+  --ch-shadow-card:    0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --ch-shadow-elevated: 0 20px 48px rgba(0, 0, 0, 0.72), 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 
   /* Shadcn HSL token shims — give Radix/Shadcn primitives proper dark fallbacks */
   --background:           0 0% 5%;
@@ -108,18 +108,18 @@
 :root:not([style*="--ch-accent"]).dark,
 :root:not([style*="--ch-accent"]) .dark {
   --ch-bg:             #0a0a0c;
-  --ch-sidebar:        #16161a;
-  --ch-card:           #1d1d20;
-  --ch-elevated:       #26262a;
+  --ch-sidebar:        #15151a;
+  --ch-card:           #1f1f24;
+  --ch-elevated:       #2a2a2f;
   --ch-accent:         #ff8d89;
   --ch-accent-rgb:     255, 141, 137;
-  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.12);
-  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.06);
+  --ch-accent-soft:    rgba(var(--ch-accent-rgb), 0.14);
+  --ch-accent-softer:  rgba(var(--ch-accent-rgb), 0.07);
   --ch-accent-strong:  #ff706b;
   --ch-on-accent:      #1a1a1a;
-  --ch-muted-bg:       #232328;
-  --ch-hover:          rgba(255, 255, 255, 0.06);
-  --ch-nav-active:     #2c2c30;
+  --ch-muted-bg:       #25252a;
+  --ch-hover:          rgba(255, 255, 255, 0.07);
+  --ch-nav-active:     #303035;
 }
 
 /* ── Workspace nav directional slide animations ───────────────────────────── */

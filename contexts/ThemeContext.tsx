@@ -81,15 +81,16 @@ function applyAccent(hex: string, isDark: boolean) {
   root.style.setProperty('--ch-ring', `rgba(${r},${g},${b},${isDark ? 0.40 : 0.20})`);
 
   if (isDark) {
-    // Layered dark surfaces — each step ~3-4% lighter than the previous so
-    // bg / sidebar / card / elevated are visually distinct regardless of accent.
-    root.style.setProperty('--ch-bg',         mix(hex, '#0a0a0c', 0.06));
-    root.style.setProperty('--ch-sidebar',    mix(hex, '#16161a', 0.08));
-    root.style.setProperty('--ch-card',       mix(hex, '#1d1d20', 0.07));
-    root.style.setProperty('--ch-elevated',   mix(hex, '#26262a', 0.08));
-    root.style.setProperty('--ch-muted-bg',   mix(hex, '#232328', 0.08));
-    root.style.setProperty('--ch-hover',      `rgba(${r},${g},${b},0.10)`);
-    root.style.setProperty('--ch-nav-active', mix(hex, '#2c2c30', 0.12));
+    // Layered dark surfaces — each step is meaningfully lighter than the
+    // previous so bg → sidebar → card → elevated read as distinct planes
+    // even from a normal viewing distance, regardless of accent.
+    root.style.setProperty('--ch-bg',         mix(hex, '#0a0a0c', 0.05));
+    root.style.setProperty('--ch-sidebar',    mix(hex, '#15151a', 0.07));
+    root.style.setProperty('--ch-card',       mix(hex, '#1f1f24', 0.07));
+    root.style.setProperty('--ch-elevated',   mix(hex, '#2a2a2f', 0.09));
+    root.style.setProperty('--ch-muted-bg',   mix(hex, '#25252a', 0.08));
+    root.style.setProperty('--ch-hover',      `rgba(${r},${g},${b},0.11)`);
+    root.style.setProperty('--ch-nav-active', mix(hex, '#303035', 0.12));
   } else {
     root.style.setProperty('--ch-bg',         mix(hex, '#f9f8f6', 0.10));
     root.style.setProperty('--ch-sidebar',    mix(hex, '#f2f0ed', 0.16));

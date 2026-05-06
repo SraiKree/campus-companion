@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   BedDouble,
@@ -14,26 +15,19 @@ import {
   CalendarDays,
   Sun,
   FileText,
-  Wallet,
   Phone,
-  Download,
   Activity as ActivityIcon,
   Plus,
-  CheckCircle2,
   MessageSquare,
   Wrench,
   Plane,
-  MapPin,
-  Hash,
   Mail,
-  Star,
   ShieldAlert,
   Droplets,
   Megaphone,
   Leaf,
   Drumstick,
   ArrowRight,
-  Calendar,
   LogIn,
   LogOut as LogOutIcon,
   UserCheck,
@@ -42,18 +36,15 @@ import {
 } from 'lucide-react';
 
 import StudentLayout from '@/components/layout/StudentLayout';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import type { HostelStudentDetails, MessMenuRow } from '@/lib/hostel';
 import { DAYS_OF_WEEK } from '@/lib/hostel';
 import { MOCK_MESS_MENU } from '@/lib/hostel-mock';
@@ -125,13 +116,6 @@ const ROOM_META = {
   roomType: 'Triple Sharing',
 };
 
-const FEE_INFO = {
-  status: 'Paid' as const,
-  amount: 45000,
-  paidOn: '2026-01-15',
-  semester: 'Sem 6',
-};
-
 const NON_VEG_KEYWORDS = ['chicken', 'mutton', 'fish', 'egg', 'prawn', 'keema', 'meat'];
 
 function dishKind(dish: string | null): 'veg' | 'nonveg' | 'none' {
@@ -147,12 +131,6 @@ const MOCK_COMPLAINTS: ComplaintItem[] = [
   { id: 'c3', title: 'Slow Wi-Fi in wing',        category: 'Internet',   status: 'Resolved',    priority: 'Low',    raisedAt: '2026-04-28' },
 ];
 
-const MOCK_LEAVES: LeaveItem[] = [
-  { id: 'l1', reason: 'Family function',  fromDate: '2026-05-12', toDate: '2026-05-15', status: 'Approved', warden: 'Mr. Rao' },
-  { id: 'l2', reason: 'Hometown visit',   fromDate: '2026-05-25', toDate: '2026-05-28', status: 'Pending',  warden: 'Mr. Rao' },
-  { id: 'l3', reason: 'Medical checkup',  fromDate: '2026-04-20', toDate: '2026-04-22', status: 'Approved', warden: 'Mr. Rao' },
-];
-
 const MOCK_NOTICES: NoticeItem[] = [
   { id: 'n1', title: 'Water supply maintenance', body: 'Water unavailable from 10 AM – 1 PM tomorrow due to tank cleaning.',  kind: 'maintenance',  postedAt: '2026-05-06' },
   { id: 'n2', title: 'Hostel Day on May 20',     body: 'Cultural events from 6 PM at the lawn. Dinner will be a buffet.',     kind: 'event',        postedAt: '2026-05-05' },
@@ -162,16 +140,19 @@ const MOCK_NOTICES: NoticeItem[] = [
 ];
 
 const MOCK_ACTIVITY: ActivityItem[] = [
-  { id: 'a1', kind: 'entry',   label: 'Returned to hostel',                                 at: 'Today, 10:42 PM' },
-  { id: 'a2', kind: 'exit',    label: 'Checked out',     detail: 'Class',                   at: 'Today, 8:15 AM' },
-  { id: 'a3', kind: 'visitor', label: 'Visitor approved', detail: 'Mr. Sharma (Father)',   at: 'Yesterday, 5:30 PM' },
-  { id: 'a4', kind: 'update',  label: 'Complaint update', detail: 'Water leakage → In Progress', at: 'Yesterday, 11:20 AM' },
-  { id: 'a5', kind: 'entry',   label: 'Returned to hostel',                                 at: 'Yesterday, 9:18 PM' },
+  { id: 'a1', kind: 'entry',   label: 'Returned to hostel',                                              at: 'Today, 10:42 PM' },
+  { id: 'a2', kind: 'update',  label: 'Leave approved',     detail: 'May 12 – May 15 by Mr. Rao',        at: 'Today, 4:05 PM' },
+  { id: 'a3', kind: 'exit',    label: 'Checked out',        detail: 'Class',                              at: 'Today, 8:15 AM' },
+  { id: 'a4', kind: 'visitor', label: 'Visitor approved',   detail: 'Mr. Sharma (Father)',                at: 'Yesterday, 5:30 PM' },
+  { id: 'a5', kind: 'update',  label: 'Complaint update',   detail: 'Water leakage → In Progress',        at: 'Yesterday, 11:20 AM' },
+  { id: 'a6', kind: 'update',  label: 'Notice posted',      detail: 'Water supply maintenance tomorrow',  at: 'Yesterday, 9:00 AM' },
+  { id: 'a7', kind: 'update',  label: 'Mess menu refreshed', detail: 'New vendor menu starts Jun 1',      at: '2 days ago' },
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function StudentHostelPage() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   const [details, setDetails] = useState<HostelStudentDetails | null>(null);
   const [menu, setMenu] = useState<MessMenuRow[]>([]);
@@ -180,23 +161,16 @@ export default function StudentHostelPage() {
   const [menuView, setMenuView] = useState<'daily' | 'weekly'>('daily');
   const [now, setNow] = useState<Date>(() => new Date());
 
-  // Local mutable copies so quick actions feel responsive.
-  const [complaints, setComplaints] = useState<ComplaintItem[]>(MOCK_COMPLAINTS);
-  const [leaves, setLeaves] = useState<LeaveItem[]>(MOCK_LEAVES);
+  // Read-only summaries on the dashboard. The full pages live at
+  // /student/complaints and /student/leave-request — those are the single
+  // source of truth for raising a complaint or applying for leave.
+  const [complaints] = useState<ComplaintItem[]>(MOCK_COMPLAINTS);
+  const [leaves, setLeaves] = useState<LeaveItem[]>([]);
+  const [leaveActivity, setLeaveActivity] = useState<ActivityItem[]>([]);
 
   // Modals
-  const [complaintOpen, setComplaintOpen] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-
-  // Form state
-  const [cTitle, setCTitle] = useState('');
-  const [cCategory, setCCategory] = useState('Plumbing');
-  const [cPriority, setCPriority] = useState<Priority>('Medium');
-  const [lReason, setLReason] = useState('');
-  const [lFrom, setLFrom] = useState('');
-  const [lTo, setLTo] = useState('');
 
   // Tick every minute so the "current meal" highlight stays accurate.
   useEffect(() => {
@@ -239,6 +213,76 @@ export default function StudentHostelPage() {
         }
       } else {
         setNoAllocation(true);
+      }
+
+      // Real leave requests submitted via /student/leave-request — populate
+      // the top Leave overview card AND inject activity timeline events.
+      try {
+        const sess = await supabase.auth.getSession();
+        const token = sess.data.session?.access_token;
+        if (token) {
+          const res = await fetch('/api/student/leave-requests', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const list: Array<{
+              id: string;
+              reason: string;
+              from_date: string;
+              to_date: string;
+              status: 'pending' | 'approved' | 'rejected';
+              created_at: string;
+            }> = Array.isArray(data.leaveRequests) ? data.leaveRequests : [];
+
+            const mappedLeaves: LeaveItem[] = list.map((r) => ({
+              id: r.id,
+              reason: r.reason,
+              fromDate: r.from_date,
+              toDate: r.to_date,
+              status:
+                r.status === 'approved'
+                  ? 'Approved'
+                  : r.status === 'rejected'
+                    ? 'Rejected'
+                    : 'Pending',
+              warden: 'Class Incharge',
+            }));
+            setLeaves(mappedLeaves);
+
+            const acts: ActivityItem[] = [...list]
+              .sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+              )
+              .map((r) => {
+                const label =
+                  r.status === 'approved'
+                    ? 'Leave approved'
+                    : r.status === 'rejected'
+                      ? 'Leave rejected'
+                      : 'Leave applied';
+                const fromShort = new Date(r.from_date).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                });
+                const toShort = new Date(r.to_date).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                });
+                return {
+                  id: `leave-${r.id}`,
+                  kind: 'update',
+                  label,
+                  detail: `${fromShort} → ${toShort} · ${r.reason}`,
+                  at: relTime(new Date(r.created_at)),
+                };
+              });
+            setLeaveActivity(acts);
+          }
+        }
+      } catch {
+        /* leave fetch is non-critical; dashboard still renders */
       }
 
       setLoading(false);
@@ -293,86 +337,28 @@ export default function StudentHostelPage() {
   const pendingComplaints = complaints.filter((c) => c.status !== 'Resolved').length;
   const pendingLeaves = leaves.filter((l) => l.status === 'Pending').length;
   const upcomingLeave = leaves.find((l) => l.status === 'Approved' && new Date(l.fromDate) >= new Date(todayMidnight));
-  const nextMeal = activeMealKey
-    ? MEAL_SLOTS.find((s) => s.key === activeMealKey)
-    : nextMealKey
-      ? MEAL_SLOTS.find((s) => s.key === nextMealKey)
-      : MEAL_SLOTS[0];
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const submitComplaint = () => {
-    if (!cTitle.trim()) return;
-    const fresh: ComplaintItem = {
-      id: `c-${Date.now()}`,
-      title: cTitle.trim(),
-      category: cCategory,
-      status: 'Open',
-      priority: cPriority,
-      raisedAt: new Date().toISOString().slice(0, 10),
-    };
-    setComplaints((prev) => [fresh, ...prev]);
-    setCTitle('');
-    setCCategory('Plumbing');
-    setCPriority('Medium');
-    setComplaintOpen(false);
-  };
-
-  const submitLeave = () => {
-    if (!lReason.trim() || !lFrom || !lTo) return;
-    const fresh: LeaveItem = {
-      id: `l-${Date.now()}`,
-      reason: lReason.trim(),
-      fromDate: lFrom,
-      toDate: lTo,
-      status: 'Pending',
-      warden: 'Mr. Rao',
-    };
-    setLeaves((prev) => [fresh, ...prev]);
-    setLReason('');
-    setLFrom('');
-    setLTo('');
-    setLeaveOpen(false);
-  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <StudentLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* ── Hero ────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#e05252]/10 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-[#e05252]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--ch-text)' }}>
-                My Hostel
-              </h1>
-              <p className="text-sm" style={{ color: 'var(--ch-muted)' }}>
-                {details
-                  ? `${ROOM_META.hostelName} • Block ${details.block} • Room ${details.room_no}`
-                  : 'Your room, mess, complaints, and outpass — all in one place'}
-              </p>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#e05252]/10 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-[#e05252]" />
           </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setComplaintOpen(true)}
-              className="h-9 px-4 text-xs font-bold uppercase tracking-wider gap-2 bg-[#e05252] hover:bg-[#c44545] text-white"
+          <div className="min-w-0">
+            <h1
+              className="text-2xl sm:text-[28px] font-bold leading-tight tracking-tight"
+              style={{ color: 'var(--ch-text)' }}
             >
-              <Plus className="w-3.5 h-3.5" />
-              Raise Complaint
-            </Button>
-            <Button
-              onClick={() => setLeaveOpen(true)}
-              variant="outline"
-              className="h-9 px-4 text-xs font-bold uppercase tracking-wider gap-2"
-              style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
-            >
-              <Plane className="w-3.5 h-3.5" />
-              Apply Leave
-            </Button>
+              My Hostel
+            </h1>
+            {details && (
+              <p className="text-sm mt-1" style={{ color: 'var(--ch-muted)' }}>
+                {ROOM_META.hostelName} · Block {details.block} · Room {details.room_no}
+              </p>
+            )}
           </div>
         </div>
 
@@ -385,7 +371,7 @@ export default function StudentHostelPage() {
         {!loading && (
           <>
             {/* ── Overview cards ─────────────────────────────────── */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <OverviewCard
                 icon={BedDouble}
                 label="Room"
@@ -399,53 +385,33 @@ export default function StudentHostelPage() {
                 hint={ROOM_META.roomType}
               />
               <OverviewCard
-                icon={CheckCircle2}
-                label="Status"
-                value={details ? 'Active' : 'Inactive'}
-                hint={details ? 'In hostel' : 'No allocation'}
-                tone="success"
-              />
-              <OverviewCard
                 icon={Wrench}
                 label="Complaints"
                 value={String(pendingComplaints)}
-                hint="Pending"
-                tone={pendingComplaints > 0 ? 'warning' : 'muted'}
+                hint={pendingComplaints > 0 ? 'Pending — open page' : 'View all'}
+                tone={pendingComplaints > 0 ? 'warning' : 'default'}
+                onClick={() => router.push('/student/complaints')}
               />
               <OverviewCard
                 icon={Plane}
                 label="Leave"
                 value={pendingLeaves > 0 ? `${pendingLeaves} pending` : 'None'}
-                hint={upcomingLeave ? `Next ${formatShort(upcomingLeave.fromDate)}` : 'No upcoming'}
-                tone={pendingLeaves > 0 ? 'warning' : 'muted'}
-              />
-              <OverviewCard
-                icon={Utensils}
-                label="Next Meal"
-                value={nextMeal?.label ?? 'Breakfast'}
-                hint={nextMeal?.timeLabel ?? ''}
-              />
-              <OverviewCard
-                icon={Wallet}
-                label="Fees"
-                value={FEE_INFO.status}
-                hint={`${FEE_INFO.semester} · ₹${FEE_INFO.amount.toLocaleString()}`}
-                tone="success"
+                hint={upcomingLeave ? `Next ${formatShort(upcomingLeave.fromDate)}` : 'View all'}
+                tone={pendingLeaves > 0 ? 'warning' : 'default'}
+                onClick={() => router.push('/student/leave-request')}
               />
             </div>
 
             {/* ── Quick Actions + Notices ────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Quick actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Quick actions — clean 2×2 grid, equal sizes */}
               <Card className="lg:col-span-2">
                 <CardHeader icon={Sparkles} title="Quick Actions" subtitle="Common things you might need" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <ActionTile icon={Plus}        label="Raise Complaint"     onClick={() => setComplaintOpen(true)} />
-                  <ActionTile icon={Plane}       label="Apply Leave"         onClick={() => setLeaveOpen(true)} />
-                  <ActionTile icon={Phone}       label="Contact Warden"      onClick={() => setContactOpen(true)} />
-                  <ActionTile icon={Download}    label="Fee Receipt"         onClick={() => alert('Downloading fee receipt…')} />
-                  <ActionTile icon={FileText}    label="View Rules"          onClick={() => setRulesOpen(true)} />
-                  <ActionTile icon={ShieldAlert} label="Emergency Help"      tone="danger" onClick={() => setContactOpen(true)} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ActionTile icon={Phone}    label="Contact Warden"  onClick={() => setContactOpen(true)} />
+                  <ActionTile icon={FileText} label="View Rules"      onClick={() => setRulesOpen(true)} />
+                  <ActionTile icon={Plus}     label="Raise Complaint" onClick={() => router.push('/student/complaints')} />
+                  <ActionTile icon={Plane}    label="Apply Leave"     onClick={() => router.push('/student/leave-request')} />
                 </div>
               </Card>
 
@@ -496,117 +462,137 @@ export default function StudentHostelPage() {
               </div>
             )}
 
-            {/* ── Room information ──────────────────────────────── */}
-            {details && (
+            {/* ── Hostel Allocation + Recent Activity (split row) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Hostel Allocation — placeholder for now */}
               <Card>
-                <CardHeader icon={BedDouble} title="Room Information" subtitle={ROOM_META.hostelName} />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <InfoTile icon={Hash}        label="Room Number" value={details.room_no} />
-                  <InfoTile icon={Building2}   label="Block"        value={details.block} />
-                  <InfoTile icon={Layers}      label="Floor"        value={`Floor ${ROOM_META.floor}`} />
-                  <InfoTile icon={BedDouble}   label="Bed"          value={`Bed ${ROOM_META.bedNumber}`} />
-                  <InfoTile icon={MapPin}      label="Hostel"       value={ROOM_META.hostelName} />
-                  <InfoTile icon={Calendar}    label="Check-in"     value={formatShort(ROOM_META.checkIn)} />
-                  <InfoTile icon={Users}       label="Room Type"    value={ROOM_META.roomType} />
-                  <InfoTile icon={CheckCircle2} label="Status"       value="Active" tone="success" />
+                <CardHeader
+                  icon={BedDouble}
+                  title="Hostel Allocation"
+                  subtitle="Your room details"
+                />
+                <div
+                  className="flex-1 rounded-xl border border-dashed flex flex-col items-center justify-center text-center px-6 py-10 min-h-[260px]"
+                  style={{
+                    borderColor: 'var(--ch-border)',
+                    backgroundColor: 'var(--ch-bg)',
+                  }}
+                >
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                    style={{
+                      backgroundColor: 'var(--ch-accent-soft)',
+                      color: 'var(--ch-accent)',
+                    }}
+                  >
+                    <BedDouble className="w-6 h-6" />
+                  </div>
+                  <p
+                    className="text-sm font-semibold mb-1.5"
+                    style={{ color: 'var(--ch-text)' }}
+                  >
+                    No allocation data available yet
+                  </p>
+                  <p
+                    className="text-xs leading-relaxed max-w-xs"
+                    style={{ color: 'var(--ch-muted)' }}
+                  >
+                    Hostel allocation details will appear here once your room is
+                    assigned.
+                  </p>
                 </div>
               </Card>
-            )}
 
-            {/* ── Roommates + Activity ──────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {details && (
-                <Card className="lg:col-span-2">
-                  <CardHeader
-                    icon={Users}
-                    title={`Roommates (${details.roommates.length})`}
-                    subtitle={
-                      details.roommates.length === 0
-                        ? "You're the only one in this room"
-                        : 'Your fellow residents'
-                    }
-                  />
-                  {details.roommates.length === 0 ? (
-                    <div
-                      className="rounded-xl border border-dashed p-6 text-center text-sm"
-                      style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-muted)' }}
-                    >
-                      No roommates yet — your room is private.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {details.roommates.map((rm) => (
-                        <div
-                          key={rm.roll_number}
-                          className="group rounded-xl border p-4 flex items-center gap-3 transition-all hover:-translate-y-0.5"
-                          style={{
-                            backgroundColor: 'var(--ch-bg)',
-                            borderColor: 'var(--ch-border)',
-                            boxShadow: 'var(--ch-shadow-card)',
-                          }}
-                        >
-                          <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0"
-                            style={{
-                              backgroundColor: 'var(--ch-accent)',
-                              color: 'var(--ch-on-accent)',
-                            }}
-                          >
-                            {rm.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className="text-sm font-semibold truncate"
-                              style={{ color: 'var(--ch-text)' }}
-                            >
-                              {rm.name}
-                            </p>
-                            <p
-                              className="text-[11px] truncate"
-                              style={{ color: 'var(--ch-muted)' }}
-                            >
-                              {rm.roll_number}
-                              {rm.department ? ` • ${rm.department}` : ''}
-                              {rm.year ? ` • Y${rm.year}` : ''}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            className="h-8 w-8 rounded-full flex items-center justify-center border opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{
-                              borderColor: 'var(--ch-border)',
-                              backgroundColor: 'var(--ch-card)',
-                              color: 'var(--ch-accent)',
-                            }}
-                            title={`Contact ${rm.name}`}
-                          >
-                            <Phone className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* Activity timeline */}
-              <Card className={details ? '' : 'lg:col-span-3'}>
+              {/* Recent Activity — dynamic logs only */}
+              <Card>
                 <CardHeader
                   icon={ActivityIcon}
                   title="Recent Activity"
-                  subtitle="Entry, exit, visitor & updates"
+                  subtitle="Entry, exit, leave, complaints, mess & visitors"
                 />
-                <ol className="relative space-y-4 pl-5">
+                <ol className="relative space-y-4 pl-5 flex-1">
                   <span
                     className="absolute left-[7px] top-2 bottom-2 w-px"
                     style={{ backgroundColor: 'var(--ch-border)' }}
                   />
-                  {MOCK_ACTIVITY.map((a) => (
+                  {[...leaveActivity, ...MOCK_ACTIVITY].map((a) => (
                     <ActivityRow key={a.id} item={a} />
                   ))}
                 </ol>
               </Card>
             </div>
+
+            {/* ── Roommates ─────────────────────────────────────── */}
+            {details && (
+              <Card>
+                <CardHeader
+                  icon={Users}
+                  title={`Roommates (${details.roommates.length})`}
+                  subtitle={
+                    details.roommates.length === 0
+                      ? "You're the only one in this room"
+                      : 'Your fellow residents'
+                  }
+                />
+                {details.roommates.length === 0 ? (
+                  <div
+                    className="rounded-xl border border-dashed p-6 text-center text-sm"
+                    style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-muted)' }}
+                  >
+                    No roommates yet — your room is private.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {details.roommates.map((rm) => (
+                      <div
+                        key={rm.roll_number}
+                        className="group rounded-xl border p-4 flex items-center gap-3 transition-all hover:-translate-y-0.5"
+                        style={{
+                          backgroundColor: 'var(--ch-bg)',
+                          borderColor: 'var(--ch-border)',
+                          boxShadow: 'var(--ch-shadow-card)',
+                        }}
+                      >
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0"
+                          style={{
+                            backgroundColor: 'var(--ch-accent)',
+                            color: 'var(--ch-on-accent)',
+                          }}
+                        >
+                          {rm.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-sm font-semibold truncate"
+                            style={{ color: 'var(--ch-text)' }}
+                          >
+                            {rm.name}
+                          </p>
+                          <p className="text-[11px] truncate" style={{ color: 'var(--ch-muted)' }}>
+                            {rm.roll_number}
+                            {rm.department ? ` • ${rm.department}` : ''}
+                            {rm.year ? ` • Y${rm.year}` : ''}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="h-8 w-8 rounded-full flex items-center justify-center border opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{
+                            borderColor: 'var(--ch-border)',
+                            backgroundColor: 'var(--ch-card)',
+                            color: 'var(--ch-accent)',
+                          }}
+                          title={`Contact ${rm.name}`}
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* ── Mess Menu ─────────────────────────────────────── */}
             {menu.length > 0 && (
@@ -759,17 +745,6 @@ export default function StudentHostelPage() {
                             <p className="text-sm leading-snug" style={{ color: 'var(--ch-text)' }}>
                               {dish || <span style={{ color: 'var(--ch-muted)' }}>Not set</span>}
                             </p>
-                            {dish && (
-                              <button
-                                type="button"
-                                className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium hover:underline"
-                                style={{ color: 'var(--ch-accent)' }}
-                                title="Rate this meal"
-                              >
-                                <Star className="w-3 h-3" />
-                                Rate meal
-                              </button>
-                            )}
                           </div>
                         );
                       })}
@@ -1061,62 +1036,22 @@ export default function StudentHostelPage() {
               </Card>
             )}
 
-            {/* ── Complaints + Leave ────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Complaints */}
-              <Card>
-                <CardHeader
-                  icon={Wrench}
-                  title="Complaints & Maintenance"
-                  subtitle={`${pendingComplaints} pending · ${complaints.length} total`}
-                  action={
-                    <Button
-                      onClick={() => setComplaintOpen(true)}
-                      size="sm"
-                      className="h-8 gap-1.5 text-xs bg-[#e05252] hover:bg-[#c44545] text-white"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Raise
-                    </Button>
-                  }
-                />
-                <div className="space-y-2">
-                  {complaints.length === 0 ? (
-                    <EmptyHint label="No complaints raised yet." />
-                  ) : (
-                    complaints.map((c) => <ComplaintRow key={c.id} item={c} />)
-                  )}
-                </div>
-              </Card>
+            {/* ── Recent Complaints ─────────────────────────────── */}
+            <Card>
+              <CardHeader
+                icon={Wrench}
+                title="Recent Complaints"
+                subtitle={`${pendingComplaints} pending · ${complaints.length} total`}
+              />
+              <div className="space-y-3">
+                {complaints.length === 0 ? (
+                  <EmptyHint label="No complaints raised yet." />
+                ) : (
+                  complaints.map((c) => <ComplaintRow key={c.id} item={c} />)
+                )}
+              </div>
+            </Card>
 
-              {/* Leave */}
-              <Card>
-                <CardHeader
-                  icon={Plane}
-                  title="Leave / Outpass"
-                  subtitle={`${pendingLeaves} pending · ${leaves.length} total`}
-                  action={
-                    <Button
-                      onClick={() => setLeaveOpen(true)}
-                      size="sm"
-                      variant="outline"
-                      className="h-8 gap-1.5 text-xs"
-                      style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Apply
-                    </Button>
-                  }
-                />
-                <div className="space-y-2">
-                  {leaves.length === 0 ? (
-                    <EmptyHint label="No leave history yet." />
-                  ) : (
-                    leaves.map((l) => <LeaveRow key={l.id} item={l} />)
-                  )}
-                </div>
-              </Card>
-            </div>
 
             {!loading && menu.length === 0 && (
               <div
@@ -1136,158 +1071,9 @@ export default function StudentHostelPage() {
       </div>
 
       {/* ── Modals ────────────────────────────────────────────────── */}
-      <Dialog open={complaintOpen} onOpenChange={setComplaintOpen}>
-        <DialogContent
-          style={{
-            backgroundColor: 'var(--ch-elevated)',
-            borderColor: 'var(--ch-border)',
-            boxShadow: 'var(--ch-shadow-elevated)',
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle style={{ color: 'var(--ch-text)' }}>Raise a Complaint</DialogTitle>
-            <DialogDescription style={{ color: 'var(--ch-muted)' }}>
-              Tell the warden what&apos;s wrong. We&apos;ll route it to the right team.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 mt-2">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                Title
-              </label>
-              <Input
-                value={cTitle}
-                onChange={(e) => setCTitle(e.target.value)}
-                placeholder="e.g., AC not cooling"
-                className="mt-1"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                  Category
-                </label>
-                <select
-                  value={cCategory}
-                  onChange={(e) => setCCategory(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border px-3 text-sm"
-                  style={{
-                    backgroundColor: 'var(--ch-input)',
-                    borderColor: 'var(--ch-border)',
-                    color: 'var(--ch-text)',
-                  }}
-                >
-                  <option>Plumbing</option>
-                  <option>Electrical</option>
-                  <option>Internet</option>
-                  <option>Cleanliness</option>
-                  <option>Furniture</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                  Priority
-                </label>
-                <select
-                  value={cPriority}
-                  onChange={(e) => setCPriority(e.target.value as Priority)}
-                  className="mt-1 h-10 w-full rounded-md border px-3 text-sm"
-                  style={{
-                    backgroundColor: 'var(--ch-input)',
-                    borderColor: 'var(--ch-border)',
-                    color: 'var(--ch-text)',
-                  }}
-                >
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setComplaintOpen(false)}
-              style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={submitComplaint} className="bg-[#e05252] hover:bg-[#c44545] text-white">
-              Submit complaint
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
-        <DialogContent
-          style={{
-            backgroundColor: 'var(--ch-elevated)',
-            borderColor: 'var(--ch-border)',
-            boxShadow: 'var(--ch-shadow-elevated)',
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle style={{ color: 'var(--ch-text)' }}>Apply for Leave / Outpass</DialogTitle>
-            <DialogDescription style={{ color: 'var(--ch-muted)' }}>
-              Submit dates and reason. Warden will review and approve.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 mt-2">
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                Reason
-              </label>
-              <Textarea
-                value={lReason}
-                onChange={(e) => setLReason(e.target.value)}
-                placeholder="Briefly describe your reason for leave"
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                  From
-                </label>
-                <Input
-                  type="date"
-                  value={lFrom}
-                  onChange={(e) => setLFrom(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--ch-muted)' }}>
-                  To
-                </label>
-                <Input
-                  type="date"
-                  value={lTo}
-                  onChange={(e) => setLTo(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setLeaveOpen(false)}
-              style={{ borderColor: 'var(--ch-border)', color: 'var(--ch-text)' }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={submitLeave} className="bg-[#e05252] hover:bg-[#c44545] text-white">
-              Submit application
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* Complaint and leave forms live on dedicated pages
+          (/student/complaints, /student/leave-request); the dashboard only
+          surfaces summaries and navigates to those pages. */}
       <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
         <DialogContent
           style={{
@@ -1350,10 +1136,21 @@ function formatShort(iso: string) {
   }
 }
 
+function relTime(d: Date): string {
+  const now = new Date();
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  if (sameDay(d, now)) return `Today, ${time}`;
+  if (sameDay(d, yesterday)) return `Yesterday, ${time}`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <section
-      className={`rounded-2xl border p-5 sm:p-6 ${className ?? ''}`}
+      className={`rounded-2xl border p-6 sm:p-7 flex flex-col ${className ?? ''}`}
       style={{
         backgroundColor: 'var(--ch-card)',
         borderColor: 'var(--ch-border)',
@@ -1377,7 +1174,7 @@ function CardHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 mb-4">
+    <div className="flex items-start justify-between gap-3 mb-5">
       <div className="flex items-start gap-3 min-w-0">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -1389,11 +1186,14 @@ function CardHeader({
           <Icon className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-base font-bold leading-tight truncate" style={{ color: 'var(--ch-text)' }}>
+          <h3
+            className="text-[15px] font-bold leading-tight truncate tracking-tight"
+            style={{ color: 'var(--ch-text)' }}
+          >
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--ch-muted)' }}>
+            <p className="text-xs mt-1 truncate" style={{ color: 'var(--ch-muted)' }}>
               {subtitle}
             </p>
           )}
@@ -1410,24 +1210,20 @@ function OverviewCard({
   value,
   hint,
   tone = 'default',
+  onClick,
 }: {
   icon: typeof Coffee;
   label: string;
   value: string;
   hint?: string;
   tone?: 'default' | 'success' | 'warning' | 'muted';
+  onClick?: () => void;
 }) {
   const toneColor =
     tone === 'success' ? '#10b981' : tone === 'warning' ? '#f59e0b' : 'var(--ch-accent)';
-  return (
-    <div
-      className="rounded-2xl border p-4 transition-all hover:-translate-y-0.5"
-      style={{
-        backgroundColor: 'var(--ch-card)',
-        borderColor: 'var(--ch-border)',
-        boxShadow: 'var(--ch-shadow-card)',
-      }}
-    >
+
+  const inner = (
+    <>
       <div className="flex items-center justify-between mb-3">
         <p
           className="text-[10px] font-bold uppercase tracking-wider truncate"
@@ -1437,55 +1233,46 @@ function OverviewCard({
         </p>
         <Icon className="w-4 h-4 flex-shrink-0" style={{ color: toneColor }} />
       </div>
-      <p
-        className="text-lg font-bold leading-tight truncate"
-        style={{ color: tone === 'muted' ? 'var(--ch-muted)' : 'var(--ch-text)' }}
-      >
-        {value}
-      </p>
+      <div className="flex items-end justify-between gap-2">
+        <p
+          className="text-lg font-bold leading-tight truncate"
+          style={{ color: tone === 'muted' ? 'var(--ch-muted)' : 'var(--ch-text)' }}
+        >
+          {value}
+        </p>
+        {onClick && (
+          <ArrowRight
+            className="w-3.5 h-3.5 -translate-x-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all flex-shrink-0"
+            style={{ color: 'var(--ch-muted)' }}
+          />
+        )}
+      </div>
       {hint && (
         <p className="text-[11px] mt-1 truncate" style={{ color: 'var(--ch-muted)' }}>
           {hint}
         </p>
       )}
-    </div>
+    </>
   );
-}
 
-function InfoTile({
-  icon: Icon,
-  label,
-  value,
-  tone = 'default',
-}: {
-  icon: typeof Coffee;
-  label: string;
-  value: string;
-  tone?: 'default' | 'success';
-}) {
+  const baseClass =
+    'group rounded-2xl border p-5 transition-all hover:-translate-y-0.5 text-left w-full';
+  const baseStyle = {
+    backgroundColor: 'var(--ch-card)',
+    borderColor: 'var(--ch-border)',
+    boxShadow: 'var(--ch-shadow-card)',
+  } as const;
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={baseClass} style={baseStyle}>
+        {inner}
+      </button>
+    );
+  }
   return (
-    <div
-      className="rounded-xl border p-3"
-      style={{
-        backgroundColor: 'var(--ch-bg)',
-        borderColor: 'var(--ch-border)',
-      }}
-    >
-      <div className="flex items-center gap-2 mb-1.5">
-        <Icon
-          className="w-3.5 h-3.5 flex-shrink-0"
-          style={{ color: tone === 'success' ? '#10b981' : 'var(--ch-accent)' }}
-        />
-        <p
-          className="text-[10px] font-bold uppercase tracking-wider truncate"
-          style={{ color: 'var(--ch-muted)' }}
-        >
-          {label}
-        </p>
-      </div>
-      <p className="text-sm font-semibold truncate" style={{ color: 'var(--ch-text)' }}>
-        {value}
-      </p>
+    <div className={baseClass} style={baseStyle}>
+      {inner}
     </div>
   );
 }
@@ -1686,33 +1473,6 @@ function ComplaintTracker({ status }: { status: ComplaintStatus }) {
           </span>
         </div>
       ))}
-    </div>
-  );
-}
-
-function LeaveRow({ item }: { item: LeaveItem }) {
-  return (
-    <div
-      className="rounded-xl border p-3"
-      style={{
-        backgroundColor: 'var(--ch-bg)',
-        borderColor: 'var(--ch-border)',
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold leading-tight truncate" style={{ color: 'var(--ch-text)' }}>
-            {item.reason}
-          </p>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--ch-muted)' }}>
-            {formatShort(item.fromDate)} → {formatShort(item.toDate)}
-          </p>
-          <p className="text-[10px] mt-1" style={{ color: 'var(--ch-muted)' }}>
-            Warden: {item.warden}
-          </p>
-        </div>
-        <StatusPill status={item.status} />
-      </div>
     </div>
   );
 }
