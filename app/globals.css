@@ -208,11 +208,57 @@
 :root[style*="--ch-accent"] .ch-themed .bg-\[\#c44545\]     { background-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .border-\[\#c44545\] { border-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .text-\[\#c94545\]   { color: var(--ch-accent) !important; }
+:root[style*="--ch-accent"] .ch-themed .bg-\[\#c94545\]     { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+:root[style*="--ch-accent"] .ch-themed .border-\[\#c94545\] { border-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .hover\:bg-\[\#c44545\]:hover { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+:root[style*="--ch-accent"] .ch-themed .hover\:bg-\[\#c94545\]:hover { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+:root[style*="--ch-accent"] .ch-themed .hover\:bg-\[\#e05252\]:hover { background-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .hover\:border-\[\#e05252\]:hover { border-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .focus-visible\:ring-\[\#e05252\]:focus-visible { --tw-ring-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .focus-visible\:border-\[\#e05252\]:focus-visible { border-color: var(--ch-accent) !important; }
 :root[style*="--ch-accent"] .ch-themed .focus\:border-\[\#c44545\]:focus { border-color: var(--ch-accent) !important; }
+
+/* Also remap the same hardcoded peach hexes when no accent is picked yet —
+   ensures every page reads from --ch-accent so default red AND custom accents
+   both render via the same code path. Scoped to .ch-themed so semantic reds
+   on non-themed surfaces (toasts, raw HTML) stay untouched. */
+.ch-themed .text-\[\#e05252\]         { color: var(--ch-accent) !important; }
+.ch-themed .bg-\[\#e05252\]           { background-color: var(--ch-accent) !important; }
+.ch-themed .border-\[\#e05252\]       { border-color: var(--ch-accent) !important; }
+.ch-themed .bg-\[\#e05252\]\/5        { background-color: rgba(var(--ch-accent-rgb), 0.05) !important; }
+.ch-themed .bg-\[\#e05252\]\/10       { background-color: rgba(var(--ch-accent-rgb), 0.10) !important; }
+.ch-themed .bg-\[\#e05252\]\/20       { background-color: rgba(var(--ch-accent-rgb), 0.20) !important; }
+.ch-themed .bg-\[\#e05252\]\/25       { background-color: rgba(var(--ch-accent-rgb), 0.25) !important; }
+.ch-themed .bg-\[\#e05252\]\/30       { background-color: rgba(var(--ch-accent-rgb), 0.30) !important; }
+.ch-themed .bg-\[\#e05252\]\/40       { background-color: rgba(var(--ch-accent-rgb), 0.40) !important; }
+.ch-themed .bg-\[\#e05252\]\/90       { background-color: rgba(var(--ch-accent-rgb), 0.90) !important; }
+.ch-themed .text-\[\#e05252\]\/70     { color: rgba(var(--ch-accent-rgb), 0.70) !important; }
+.ch-themed .border-\[\#e05252\]\/20   { border-color: rgba(var(--ch-accent-rgb), 0.20) !important; }
+.ch-themed .border-\[\#e05252\]\/40   { border-color: rgba(var(--ch-accent-rgb), 0.40) !important; }
+.ch-themed .from-\[\#e05252\]\/5      { --tw-gradient-from: rgba(var(--ch-accent-rgb), 0.05) var(--tw-gradient-from-position) !important; --tw-gradient-to: rgba(var(--ch-accent-rgb), 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+.ch-themed .to-\[\#c44545\]\/5        { --tw-gradient-to: rgba(var(--ch-accent-rgb), 0.05) var(--tw-gradient-to-position) !important; }
+.ch-themed .text-\[\#c44545\]         { color: var(--ch-accent) !important; }
+.ch-themed .bg-\[\#c44545\]           { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+.ch-themed .bg-\[\#c44545\]\/10       { background-color: rgba(var(--ch-accent-rgb), 0.10) !important; }
+.ch-themed .text-\[\#c94545\]         { color: var(--ch-accent) !important; }
+.ch-themed .bg-\[\#c94545\]           { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+.ch-themed .hover\:bg-\[\#c44545\]:hover { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+.ch-themed .hover\:bg-\[\#c44545\]\/90:hover { background-color: rgba(var(--ch-accent-rgb), 0.90) !important; filter: brightness(0.92); }
+.ch-themed .hover\:bg-\[\#c94545\]:hover { background-color: var(--ch-accent) !important; filter: brightness(0.92); }
+.ch-themed .hover\:bg-\[\#e05252\]:hover { background-color: var(--ch-accent) !important; }
+.ch-themed .hover\:bg-\[\#e05252\]\/5:hover  { background-color: rgba(var(--ch-accent-rgb), 0.05) !important; }
+.ch-themed .hover\:bg-\[\#e05252\]\/10:hover { background-color: rgba(var(--ch-accent-rgb), 0.10) !important; }
+.ch-themed .hover\:bg-\[\#e05252\]\/90:hover { background-color: rgba(var(--ch-accent-rgb), 0.90) !important; }
+.ch-themed .hover\:border-\[\#e05252\]:hover    { border-color: var(--ch-accent) !important; }
+.ch-themed .hover\:border-\[\#e05252\]\/40:hover { border-color: rgba(var(--ch-accent-rgb), 0.40) !important; }
+.ch-themed .focus-visible\:ring-\[\#e05252\]:focus-visible { --tw-ring-color: var(--ch-accent) !important; }
+.ch-themed .focus-visible\:border-\[\#e05252\]:focus-visible { border-color: var(--ch-accent) !important; }
+.ch-themed .focus\:border-\[\#c44545\]:focus     { border-color: var(--ch-accent) !important; }
+.ch-themed .focus\:border-\[\#e05252\]:focus     { border-color: var(--ch-accent) !important; }
+.ch-themed .focus\:ring-\[\#e05252\]\/20:focus   { --tw-ring-color: rgba(var(--ch-accent-rgb), 0.20) !important; }
+.ch-themed .shadow-\[\#e05252\]\/20  { --tw-shadow-color: rgba(var(--ch-accent-rgb), 0.20) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
+.ch-themed .shadow-\[\#e05252\]\/25  { --tw-shadow-color: rgba(var(--ch-accent-rgb), 0.25) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
+.ch-themed .shadow-\[\#e05252\]\/30  { --tw-shadow-color: rgba(var(--ch-accent-rgb), 0.30) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
 
 /* Card shadows in dark mode — token-driven so they stay accent-agnostic */
 .dark .shadow-sm,

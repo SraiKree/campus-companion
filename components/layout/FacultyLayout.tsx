@@ -301,9 +301,9 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
                 style={{
                   backgroundColor: isEducation
                     ? 'rgba(5,150,105,0.08)'
-                    : 'rgba(224,82,82,0.08)',
-                  color: isEducation ? '#059669' : '#e05252',
-                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(224,82,82,0.2)'}`,
+                    : 'var(--ch-accent-soft)',
+                  color: isEducation ? '#059669' : 'var(--ch-accent)',
+                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(var(--ch-accent-rgb),0.2)'}`,
                 }}
               >
                 {isEducation ? 'Learning Mode' : 'Admin Mode'}
