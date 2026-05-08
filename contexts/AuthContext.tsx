@@ -232,6 +232,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Session could not be established.' };
     }
 
+    // Dev master account — single credential that can sign into every role
+    // page so we don't need to seed per-role users while iterating.
+    const isDevMaster = (authUser.email || email).toLowerCase() === 'keertan.k@gmail.com';
+
     let actualRole: UserRole | null = null;
     const metaRole = (authUser.user_metadata as Record<string, unknown> | undefined)?.role;
     if (typeof metaRole === 'string' && isValidRole(metaRole)) {
@@ -247,7 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (actualRole !== expectedRole) {
+    if (!isDevMaster && actualRole !== expectedRole) {
       await supabase.auth.signOut();
       clearUserData();
       return {
@@ -260,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: authUser.id,
       email: authUser.email || email,
       name: authUser.email || email,
-      role: actualRole,
+      role: isDevMaster ? expectedRole : (actualRole as UserRole),
     };
     storeUserData(userData);
     return { success: true };
