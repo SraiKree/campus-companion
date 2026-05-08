@@ -305,7 +305,7 @@ export default function StudentCoursesPage() {
               courses.map((course) => {
                 // Calculate progress based on assignments (set to 0% for now)
                 const progress = 0;
-                const color = '#c44545';
+                const color = 'var(--ch-accent)';
                 
                 return (
                   <button

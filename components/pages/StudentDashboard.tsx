@@ -256,7 +256,10 @@ const StudentDashboard = () => {
                 <span className="text-[#666]">{nextClass.time}</span>
               </div>
               <div className="h-2 bg-[#f2f0ed] rounded-full overflow-hidden">
-                <div className="h-full w-[70%] bg-[#e05252] rounded-full shadow-[0_0_12px_rgba(224,82,82,0.3)]" />
+                <div
+                  className="h-full w-[70%] bg-[#e05252] rounded-full"
+                  style={{ boxShadow: '0 0 12px rgba(var(--ch-accent-rgb), 0.3)' }}
+                />
               </div>
             </div>
           </div>

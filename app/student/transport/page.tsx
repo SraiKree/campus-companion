@@ -513,7 +513,7 @@ function TabButton({
       {active && (
         <span
           className="absolute left-0 right-0 bottom-[-1px] h-[2px]"
-          style={{ backgroundColor: '#e05252' }}
+          style={{ backgroundColor: 'var(--ch-accent)' }}
         />
       )}
     </button>
@@ -550,8 +550,8 @@ function BusCard({ bus, isMine }: { bus: FleetBus; isMine: boolean }) {
     <div
       className="rounded-xl border p-4 flex flex-col gap-3"
       style={{
-        backgroundColor: isMine ? 'rgba(224,82,82,0.05)' : 'var(--ch-card)',
-        borderColor: isMine ? 'rgba(224,82,82,0.35)' : 'var(--ch-border)',
+        backgroundColor: isMine ? 'rgba(var(--ch-accent-rgb),0.05)' : 'var(--ch-card)',
+        borderColor: isMine ? 'rgba(var(--ch-accent-rgb),0.35)' : 'var(--ch-border)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -559,7 +559,7 @@ function BusCard({ bus, isMine }: { bus: FleetBus; isMine: boolean }) {
           <div className="flex items-center gap-2">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(224,82,82,0.1)' }}
+              style={{ backgroundColor: 'rgba(var(--ch-accent-rgb),0.1)' }}
             >
               <Bus className="w-4 h-4 text-[#e05252]" />
             </div>
@@ -655,8 +655,8 @@ function RouteCard({
                   <div
                     className="w-3 h-3 rounded-full border-2"
                     style={{
-                      backgroundColor: isMine ? '#e05252' : 'var(--ch-card)',
-                      borderColor: isMine ? '#e05252' : 'var(--ch-border)',
+                      backgroundColor: isMine ? 'var(--ch-accent)' : 'var(--ch-card)',
+                      borderColor: isMine ? 'var(--ch-accent)' : 'var(--ch-border)',
                     }}
                   />
                   {!isLast && (
@@ -670,7 +670,7 @@ function RouteCard({
                   <div className="flex items-center justify-between gap-3">
                     <p
                       className="text-sm font-semibold"
-                      style={{ color: isMine ? '#e05252' : 'var(--ch-text)' }}
+                      style={{ color: isMine ? 'var(--ch-accent)' : 'var(--ch-text)' }}
                     >
                       {s.stop_name}
                       {isMine && (
