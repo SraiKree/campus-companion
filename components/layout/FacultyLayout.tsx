@@ -104,20 +104,16 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
 
   const isEducation = workspace === 'education';
 
-  // ── Workspace-aware colour tokens ──────────────────────────────────
-  const wsAccent = isEducation ? '#059669' : 'var(--ch-accent)';
-  const wsSidebarBg = isEducation
-    ? (isDark ? '#0f1a16' : '#eef6f2')
-    : 'var(--ch-sidebar)';
-  const wsBorderColor = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
-    : 'var(--ch-border)';
-  const wsNavActive = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
-    : 'var(--ch-nav-active)';
-  const wsHover = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
-    : 'var(--ch-hover)';
+  // ── Theme tokens ───────────────────────────────────────────────────
+  // Workspaces are kept as a navigation grouping but share one accent so
+  // the AccentPicker controls every surface. Use --ch-accent across both
+  // education and admin workspaces; the chip in the header is the only
+  // visual distinguisher between modes.
+  const wsAccent = 'var(--ch-accent)';
+  const wsSidebarBg = 'var(--ch-sidebar)';
+  const wsBorderColor = 'var(--ch-border)';
+  const wsNavActive = 'var(--ch-nav-active)';
+  const wsHover = 'var(--ch-hover)';
 
   return (
     <div
@@ -299,11 +295,9 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
                 style={{
-                  backgroundColor: isEducation
-                    ? 'rgba(5,150,105,0.08)'
-                    : 'var(--ch-accent-soft)',
-                  color: isEducation ? '#059669' : 'var(--ch-accent)',
-                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(var(--ch-accent-rgb),0.2)'}`,
+                  backgroundColor: 'var(--ch-accent-soft)',
+                  color: 'var(--ch-accent)',
+                  border: '1px solid rgba(var(--ch-accent-rgb),0.2)',
                 }}
               >
                 {isEducation ? 'Learning Mode' : 'Admin Mode'}
