@@ -171,6 +171,7 @@ export default function StudentHostelPage() {
   // Modals
   const [rulesOpen, setRulesOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [noticesOpen, setNoticesOpen] = useState(false);
 
   // Tick every minute so the "current meal" highlight stays accurate.
   useEffect(() => {
@@ -424,6 +425,7 @@ export default function StudentHostelPage() {
                   action={
                     <button
                       type="button"
+                      onClick={() => setNoticesOpen(true)}
                       className="text-[11px] font-bold uppercase tracking-wider hover:underline"
                       style={{ color: 'var(--ch-accent)' }}
                     >
@@ -1118,6 +1120,28 @@ export default function StudentHostelPage() {
             <ContactRow icon={Phone} label="Asst. Warden"           value="+91 98765 43211" />
             <ContactRow icon={ShieldAlert} label="Emergency / Security" value="+91 98765 90000" />
             <ContactRow icon={Mail}  label="Hostel Office"           value="hostel@mlrit.ac.in" />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={noticesOpen} onOpenChange={setNoticesOpen}>
+        <DialogContent
+          style={{
+            backgroundColor: 'var(--ch-elevated)',
+            borderColor: 'var(--ch-border)',
+            boxShadow: 'var(--ch-shadow-elevated)',
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ color: 'var(--ch-text)' }}>Hostel Notices</DialogTitle>
+            <DialogDescription style={{ color: 'var(--ch-muted)' }}>
+              {MOCK_NOTICES.length} active {MOCK_NOTICES.length === 1 ? 'notice' : 'notices'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 max-h-[60vh] overflow-y-auto pr-1">
+            {MOCK_NOTICES.map((n) => (
+              <NoticeRow key={n.id} notice={n} />
+            ))}
           </div>
         </DialogContent>
       </Dialog>

@@ -18,6 +18,7 @@ import WorkspaceSwitcher from '@/components/workspace/WorkspaceSwitcher';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import NotificationPanel from '@/components/NotificationPanel';
+import AccentPicker from '@/components/AccentPicker';
 
 interface FacultyLayoutProps {
   children: ReactNode;
@@ -104,7 +105,7 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
   const isEducation = workspace === 'education';
 
   // ── Workspace-aware colour tokens ──────────────────────────────────
-  const wsAccent = isEducation ? '#059669' : (isDark ? '#ff8d89' : '#e05252');
+  const wsAccent = isEducation ? '#059669' : 'var(--ch-accent)';
   const wsSidebarBg = isEducation
     ? (isDark ? '#0f1a16' : '#eef6f2')
     : 'var(--ch-sidebar)';
@@ -318,12 +319,14 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
                 style={{
                   backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
                   borderColor: 'var(--ch-border)',
-                  color: isDark ? '#ff8d89' : '#e05252',
+                  color: 'var(--ch-accent)',
                 }}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+
+              <AccentPicker />
 
               <Button
                 variant="ghost"

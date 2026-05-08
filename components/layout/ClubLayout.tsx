@@ -11,6 +11,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import NotificationPanel from '@/components/NotificationPanel';
+import AccentPicker from '@/components/AccentPicker';
 
 interface ClubLayoutProps {
   children: ReactNode;
@@ -165,12 +166,13 @@ const ClubLayout = ({ children }: ClubLayoutProps) => {
                 style={{
                   backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
                   borderColor: 'var(--ch-border)',
-                  color: isDark ? '#ff8d89' : '#e05252',
+                  color: 'var(--ch-accent)',
                 }}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+              <AccentPicker />
               <Button
                 variant="ghost"
                 className="h-10 px-3 rounded-full gap-2 border"

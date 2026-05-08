@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import AccentPicker from '@/components/AccentPicker';
 
 export default function HostelAdminLoginPage() {
   const router = useRouter();
@@ -48,9 +49,12 @@ export default function HostelAdminLoginPage() {
 
   return (
     <div
-      className={`ch-themed min-h-screen flex items-center justify-center px-4${isDark ? ' dark' : ''}`}
+      className={`ch-themed min-h-screen flex items-center justify-center px-4 relative${isDark ? ' dark' : ''}`}
       style={{ backgroundColor: 'var(--ch-bg)' }}
     >
+      <div className="absolute top-6 right-6">
+        <AccentPicker />
+      </div>
       <div
         className="w-full max-w-md rounded-2xl border p-8 shadow-sm"
         style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
