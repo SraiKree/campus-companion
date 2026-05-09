@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import './../faculty-design.css';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import FacultyLayout from '@/components/layout/FacultyLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Calendar, Clock, MapPin, GraduationCap } from 'lucide-react';
-import Link from 'next/link';
+import { Search, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface FacultyClass {
@@ -49,6 +46,50 @@ const PERIODS = [
   { number: 6, label: '3:10-4:10' },
 ];
 
+// Initials helper for the avatar bubble
+const initials = (name: string) =>
+  name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase();
+
+// ── Present / Absent semantic toggle ──────────────────────────────────
+const PresentToggle = ({ present, onChange }: { present: boolean; onChange: (p: boolean) => void }) => {
+  const trackBg = present ? 'var(--fd-brand-500)' : 'var(--fd-red-100)';
+  const trackBorder = present ? 'var(--fd-brand-600)' : 'var(--fd-red-600)';
+  const labelColor = present ? 'var(--fd-brand-600)' : 'var(--fd-red-600)';
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!present)}
+      role="switch"
+      aria-checked={present}
+      className="fac-toggle"
+    >
+      <span
+        className="fac-toggle-track"
+        style={{ background: trackBg, border: `1px solid ${trackBorder}` }}
+      >
+        <span className="fac-toggle-thumb" style={{ left: present ? 20 : 2 }} />
+      </span>
+      <span className="fac-toggle-label" style={{ color: labelColor }}>
+        {present ? 'Present' : 'Absent'}
+      </span>
+    </button>
+  );
+};
+
+const Tally = ({ label, value, tone }: { label: string; value: number; tone: 'green' | 'red' }) => {
+  const tones = {
+    green: { bg: 'var(--fd-brand-100)', fg: 'var(--fd-brand-600)' },
+    red:   { bg: 'var(--fd-red-100)',   fg: 'var(--fd-red-600)' },
+  } as const;
+  const t = tones[tone];
+  return (
+    <div style={{ background: t.bg, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: t.fg, letterSpacing: '-0.02em' }}>{value}</div>
+      <div className="fac-eyebrow" style={{ color: t.fg, fontSize: 9, marginTop: 2 }}>{label}</div>
+    </div>
+  );
+};
+
 export default function FacultyAttendancePage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -64,16 +105,19 @@ export default function FacultyAttendancePage() {
   const [loadingPeriods, setLoadingPeriods] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredStudents = useMemo(() =>
-    students.filter(s =>
-      s.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
-    [students, searchTerm]
+  const filteredStudents = useMemo(
+    () =>
+      students.filter(
+        s =>
+          s.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    [students, searchTerm],
   );
 
   const presentCount = Array.from(attendance.values()).filter(Boolean).length;
   const absentCount = students.length - presentCount;
+  const pct = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 0;
 
   useEffect(() => {
     if (!loading) {
@@ -109,7 +153,9 @@ export default function FacultyAttendancePage() {
     if (!user?.id || !selectedPeriod) return;
     setLoadingClasses(true);
     try {
-      const res = await fetch(`/api/faculty/classes?facultyId=${user.id}&academicYear=${selectedPeriod.year}&semester=${selectedPeriod.semester}`);
+      const res = await fetch(
+        `/api/faculty/classes?facultyId=${user.id}&academicYear=${selectedPeriod.year}&semester=${selectedPeriod.semester}`,
+      );
       if (res.ok) {
         const data = await res.json();
         setClasses(data.classes || []);
@@ -126,7 +172,7 @@ export default function FacultyAttendancePage() {
     setSearchTerm('');
     try {
       const res = await fetch(
-        `/api/faculty/attendance/students?department=${classData.department}&section=${classData.section}&academicYear=${classData.academic_year}&semester=${classData.semester}`
+        `/api/faculty/attendance/students?department=${classData.department}&section=${classData.section}&academicYear=${classData.academic_year}&semester=${classData.semester}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -147,10 +193,10 @@ export default function FacultyAttendancePage() {
     fetchStudents(classData);
   };
 
-  const toggle = (rollNumber: string) => {
+  const toggle = (roll: string) => {
     setAttendance(prev => {
       const next = new Map(prev);
-      next.set(rollNumber, !next.get(rollNumber));
+      next.set(roll, !next.get(roll));
       return next;
     });
   };
@@ -202,196 +248,320 @@ export default function FacultyAttendancePage() {
       ? `P${start} · ${PERIODS[start - 1]?.label}`
       : `P${start}–P${end} · ${PERIODS[start - 1]?.label}`;
 
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+
   if (loading || !isAuthenticated || user?.role !== 'faculty') return null;
 
   return (
     <FacultyLayout>
-      {loadingPeriods ? (
-        <div className="flex items-center justify-center py-20 text-[#666]">Loading...</div>
-      ) : !selectedClass ? (
-        /* ── Class Selection ── */
-        <div>
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-[#1a1a1a]">Mark Attendance</h1>
-              <p className="text-sm text-[#666] mt-0.5">Select a class to begin</p>
+      <div className="fac-design">
+        {/* ── Page header ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <span className="fac-pill fac-pill-cream">Today · {today}</span>
+            <h1 style={{ margin: '10px 0 4px', fontSize: 32, fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--fd-text)' }}>
+              Attendance
+            </h1>
+            <div style={{ color: 'var(--fd-text-2)', fontSize: 13 }}>
+              {selectedClass
+                ? 'Toggle present/absent per student. Save when you\'re done.'
+                : 'Pick a class to start marking attendance.'}
             </div>
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-[#666]" />
-              <Select
-                value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.semester}` : ''}
-                onValueChange={(v) => {
-                  const [year, semester] = v.split('-');
-                  const p = availablePeriods.find(p => p.year === year && p.semester === semester);
-                  if (p) setSelectedPeriod(p);
-                }}
-              >
-                <SelectTrigger className="w-[200px] h-10 bg-white border-[#e5e5e5] rounded-xl text-sm">
-                  <SelectValue placeholder="Academic period" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availablePeriods.map((p) => (
-                    <SelectItem key={`${p.year}-${p.semester}`} value={`${p.year}-${p.semester}`}>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {!selectedClass && availablePeriods.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <GraduationCap className="h-4 w-4" style={{ color: 'var(--fd-text-3)' }} />
+                <select
+                  className="fac-input"
+                  style={{ width: 220, padding: '8px 12px' }}
+                  value={selectedPeriod ? `${selectedPeriod.year}-${selectedPeriod.semester}` : ''}
+                  onChange={(e) => {
+                    const [year, semester] = e.target.value.split('-');
+                    const p = availablePeriods.find(p => p.year === year && p.semester === semester);
+                    if (p) setSelectedPeriod(p);
+                  }}
+                >
+                  {availablePeriods.map(p => (
+                    <option key={`${p.year}-${p.semester}`} value={`${p.year}-${p.semester}`}>
                       {p.label}
-                    </SelectItem>
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {loadingClasses ? (
-            <div className="flex items-center justify-center py-20 text-[#666]">Loading classes...</div>
-          ) : classes.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-[#666] mb-4">No classes found</p>
-              <Link href="/faculty/timetable">
-                <Button className="bg-[#1a1a1a] text-white hover:bg-[#333] rounded-xl">Add Classes</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {classes.map((cls) => (
+                </select>
+              </div>
+            )}
+            {selectedClass && (
+              <>
                 <button
-                  key={cls.id}
-                  onClick={() => handleClassSelect(cls)}
-                  className="text-left bg-white border border-[#e5e5e5] rounded-2xl p-5 hover:border-[#e05252]/40 hover:shadow-sm transition-all group"
+                  type="button"
+                  className="fac-btn fac-btn-secondary"
+                  onClick={() => {
+                    setSelectedClass(null);
+                    setStudents([]);
+                    setAttendance(new Map());
+                  }}
                 >
-                  <div className="mb-3">
-                    <p className="text-xs font-bold text-[#e05252] mb-1">{cls.subject_code}</p>
-                    <p className="text-base font-semibold text-[#1a1a1a] leading-tight">{cls.subject_name}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    <span className="text-[10px] font-bold bg-[#f2f0ed] text-[#666] px-2 py-0.5 rounded-full">
-                      {cls.department}-{cls.section}
-                    </span>
-                    {cls.is_lab && (
-                      <span className="text-[10px] font-bold bg-[#e05252]/10 text-[#e05252] px-2 py-0.5 rounded-full">Lab</span>
-                    )}
-                  </div>
-                  <div className="space-y-1 text-xs text-[#666]">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3 w-3" /> {WEEKDAYS[cls.weekday - 1]}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3 w-3" /> {getPeriodLabel(cls.period_start, cls.period_end)}
-                    </div>
-                    {cls.room_number && (
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" /> {cls.room_number}
-                      </div>
-                    )}
-                  </div>
+                  Switch Class
                 </button>
-              ))}
-            </div>
-          )}
+                <button
+                  type="button"
+                  className="fac-btn fac-btn-primary"
+                  onClick={handleSave}
+                  disabled={savingAttendance || loadingStudents}
+                >
+                  {savingAttendance ? 'Saving…' : 'Save Attendance'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      ) : (
-        /* ── Attendance Marking ── */
-        <div>
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <button
-              onClick={() => { setSelectedClass(null); setStudents([]); setAttendance(new Map()); }}
-              className="w-9 h-9 rounded-xl bg-white border border-[#e5e5e5] flex items-center justify-center hover:bg-[#f2f0ed] transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 text-[#666]" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-[#1a1a1a]">
-                {selectedClass.subject_code} · {selectedClass.subject_name}
-              </h1>
-              <p className="text-sm text-[#666]">
-                {selectedClass.department}-{selectedClass.section} · {WEEKDAYS[selectedClass.weekday - 1]} · {getPeriodLabel(selectedClass.period_start, selectedClass.period_end)}
-              </p>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={savingAttendance || loadingStudents}
-              className="px-5 py-2 bg-[#1a1a1a] text-white text-sm font-semibold rounded-xl hover:bg-[#333] transition-colors disabled:opacity-50"
-            >
-              {savingAttendance ? 'Saving...' : 'Save Attendance'}
-            </button>
-          </div>
 
-          {loadingStudents ? (
-            <div className="flex items-center justify-center py-20 text-[#666]">Loading students...</div>
-          ) : (
-            <>
-              {/* Stats + Controls */}
-              <div className="flex items-center gap-4 mb-5 flex-wrap">
-                <div className="flex items-center gap-3 bg-white border border-[#e5e5e5] rounded-xl px-4 py-2.5">
-                  <span className="text-xs text-[#666]">Total</span>
-                  <span className="text-sm font-bold text-[#1a1a1a]">{students.length}</span>
-                  <div className="w-px h-4 bg-[#e5e5e5]" />
-                  <span className="text-xs text-emerald-600 font-semibold">P: {presentCount}</span>
-                  <div className="w-px h-4 bg-[#e5e5e5]" />
-                  <span className="text-xs text-red-500 font-semibold">A: {absentCount}</span>
-                </div>
-                <button
-                  onClick={() => markAll(true)}
-                  className="text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors border border-emerald-100"
-                >
-                  Mark All Present
-                </button>
-                <button
-                  onClick={() => markAll(false)}
-                  className="text-xs px-3 py-2 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors border border-red-100"
-                >
-                  Mark All Absent
-                </button>
-                <div className="ml-auto relative max-w-xs w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#666]/50" />
-                  <Input
-                    placeholder="Search by roll no or name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 h-10 bg-white border-[#e5e5e5] rounded-xl text-sm"
-                  />
+        {loadingPeriods ? (
+          <div className="fac-card" style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fd-text-3)' }}>
+            Loading academic periods…
+          </div>
+        ) : !selectedClass ? (
+          /* ── Class chip selector view ── */
+          <>
+            {loadingClasses ? (
+              <div className="fac-card" style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fd-text-3)' }}>
+                Loading classes…
+              </div>
+            ) : classes.length === 0 ? (
+              <div className="fac-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No classes found</div>
+                <div style={{ color: 'var(--fd-text-3)', fontSize: 13 }}>
+                  Add classes in the timetable to start marking attendance.
                 </div>
               </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {classes.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="fac-chip"
+                    onClick={() => handleClassSelect(c)}
+                    style={{ flex: '1 1 240px', maxWidth: 320 }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <span className="fac-chip-code">{c.subject_code}</span>
+                      {c.is_lab && (
+                        <span className="fac-pill fac-pill-purple" style={{ padding: '2px 7px', fontSize: 9 }}>
+                          Lab
+                        </span>
+                      )}
+                    </div>
+                    <div className="fac-chip-name">{c.subject_name}</div>
+                    <div className="fac-chip-meta">
+                      {c.department}-{c.section} · {WEEKDAYS[c.weekday - 1]} · {getPeriodLabel(c.period_start, c.period_end)}
+                      {c.room_number ? ` · ${c.room_number}` : ''}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          /* ── Roster + analytics view ── */
+          <>
+            {/* Class chip strip — shows the chosen class plus quick switch row */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+              {classes.map(c => {
+                const isActive = c.id === selectedClass.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`fac-chip${isActive ? ' active' : ''}`}
+                    onClick={() => handleClassSelect(c)}
+                    style={{ minWidth: 200, opacity: isActive ? 1 : 0.65 }}
+                  >
+                    <span className="fac-chip-code">{c.subject_code}</span>
+                    <div className="fac-chip-name">{c.subject_name}</div>
+                    <div className="fac-chip-meta">
+                      {c.department}-{c.section} · {getPeriodLabel(c.period_start, c.period_end)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-              {/* Student List */}
-              <div className="bg-white border border-[#e5e5e5] rounded-2xl overflow-hidden">
-                {filteredStudents.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-[#666]">No students found</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, alignItems: 'start' }}>
+              {/* ── Roster card ── */}
+              <div className="fac-card fac-card-flush">
+                {/* Card header */}
+                <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--fd-line)', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <h3 className="fac-card-title">
+                      {selectedClass.subject_code} · {selectedClass.subject_name}
+                    </h3>
+                    <div style={{ fontSize: 12, color: 'var(--fd-text-3)', marginTop: 3 }}>
+                      {selectedClass.department}-{selectedClass.section} · {WEEKDAYS[selectedClass.weekday - 1]} · {getPeriodLabel(selectedClass.period_start, selectedClass.period_end)}
+                      {selectedClass.room_number ? ` · ${selectedClass.room_number}` : ''} ·{' '}
+                      <span style={{ color: 'var(--fd-brand-600)', fontWeight: 700 }}>
+                        {presentCount}/{students.length} present ({pct}%)
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search
+                        className="h-3.5 w-3.5"
+                        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fd-text-3)' }}
+                      />
+                      <input
+                        className="fac-input"
+                        style={{ width: 200, padding: '8px 10px 8px 30px' }}
+                        placeholder="Search roll or name…"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="fac-btn fac-btn-secondary"
+                      style={{ padding: '8px 14px', fontSize: 12 }}
+                      onClick={() => markAll(true)}
+                    >
+                      Mark all present
+                    </button>
+                    <button
+                      type="button"
+                      className="fac-btn fac-btn-ghost"
+                      style={{ padding: '8px 14px', fontSize: 12 }}
+                      onClick={() => markAll(false)}
+                    >
+                      Mark all absent
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table */}
+                {loadingStudents ? (
+                  <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fd-text-3)' }}>
+                    Loading students…
+                  </div>
+                ) : filteredStudents.length === 0 ? (
+                  <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--fd-text-3)' }}>
+                    No students found
+                  </div>
                 ) : (
-                  <div className="divide-y divide-[#f2f0ed]">
-                    {filteredStudents.map((student) => {
-                      const isPresent = attendance.get(student.roll_number) ?? true;
-                      return (
-                        <div
-                          key={student.roll_number}
-                          className="flex items-center gap-4 px-5 py-3 hover:bg-[#f9f8f6] transition-colors"
-                        >
-                          {/* Roll number — prominent */}
-                          <span className="w-28 text-sm font-bold text-[#1a1a1a] shrink-0 font-mono">
-                            {student.roll_number}
-                          </span>
-                          {/* Name */}
-                          <span className="flex-1 text-sm text-[#666] truncate">{student.name}</span>
-                          {/* Toggle */}
-                          <button
-                            onClick={() => toggle(student.roll_number)}
-                            className={`w-20 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                              isPresent
-                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100'
-                                : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
-                            }`}
-                          >
-                            {isPresent ? 'Present' : 'Absent'}
-                          </button>
-                        </div>
-                      );
-                    })}
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="fac-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 160 }}>Roll Number</th>
+                          <th>Student</th>
+                          <th style={{ width: 220, textAlign: 'right' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredStudents.map(s => {
+                          const isPresent = attendance.get(s.roll_number) ?? true;
+                          return (
+                            <tr key={s.roll_number}>
+                              <td style={{ fontFamily: 'var(--fd-mono)', fontSize: 12, color: 'var(--fd-text-2)' }}>
+                                {s.roll_number}
+                              </td>
+                              <td style={{ fontWeight: 600 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <div className="fac-avatar">{initials(s.name)}</div>
+                                  {s.name}
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                  <PresentToggle
+                                    present={isPresent}
+                                    onChange={() => toggle(s.roll_number)}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      )}
+
+              {/* ── Side analytics column ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Live tally */}
+                <div className="fac-card">
+                  <h3 className="fac-card-title">Today&apos;s Tally</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, margin: '12px 0 2px' }}>
+                    <span style={{ fontSize: 38, fontWeight: 800, color: 'var(--fd-brand-600)', letterSpacing: '-0.025em' }}>
+                      {pct}%
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--fd-text-2)' }}>present</span>
+                  </div>
+                  <div className="fac-bar" style={{ marginTop: 10 }}>
+                    <span style={{ width: `${pct}%`, background: 'var(--fd-brand-500)' }} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
+                    <Tally label="Present" value={presentCount} tone="green" />
+                    <Tally label="Absent" value={absentCount} tone="red" />
+                  </div>
+                </div>
+
+                {/* Roster meta */}
+                <div className="fac-card">
+                  <h3 className="fac-card-title">Class Meta</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, fontSize: 12, color: 'var(--fd-text-2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--fd-text-3)' }}>Section</span>
+                      <span style={{ fontWeight: 700, color: 'var(--fd-text)' }}>
+                        {selectedClass.department}-{selectedClass.section}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--fd-text-3)' }}>Period</span>
+                      <span style={{ fontWeight: 700, color: 'var(--fd-text)' }}>
+                        {getPeriodLabel(selectedClass.period_start, selectedClass.period_end)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--fd-text-3)' }}>Day</span>
+                      <span style={{ fontWeight: 700, color: 'var(--fd-text)' }}>
+                        {WEEKDAYS[selectedClass.weekday - 1]}
+                      </span>
+                    </div>
+                    {selectedClass.room_number && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--fd-text-3)' }}>Room</span>
+                        <span style={{ fontWeight: 700, color: 'var(--fd-text)' }}>
+                          {selectedClass.room_number}
+                        </span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--fd-text-3)' }}>Total roster</span>
+                      <span style={{ fontWeight: 700, color: 'var(--fd-text)' }}>
+                        {students.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* How-to hint */}
+                <div className="fac-card" style={{ background: 'var(--fd-brand-50)', borderColor: 'var(--fd-brand-100)' }}>
+                  <div className="fac-eyebrow" style={{ color: 'var(--fd-brand-600)' }}>Quick tip</div>
+                  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--fd-text-2)', lineHeight: 1.55 }}>
+                    Tap the toggle on each row to flip between Present and Absent. The tally on the left updates live. Hit <strong style={{ color: 'var(--fd-brand-600)' }}>Save Attendance</strong> when you&apos;re done — nothing is persisted until then.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </FacultyLayout>
   );
 }

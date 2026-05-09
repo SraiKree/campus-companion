@@ -236,7 +236,10 @@ export default function FacultyTimetablePage() {
   };
 
   const getClassesForDayAndPeriod = (weekday: number, period: number, date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
     
     return classes.filter(c => {
       // Check if class is on this weekday
@@ -319,7 +322,7 @@ export default function FacultyTimetablePage() {
                 Create Class
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Class</DialogTitle>
               </DialogHeader>

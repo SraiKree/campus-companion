@@ -26,7 +26,12 @@ export async function GET(request: NextRequest) {
     }
 
     const targetDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
-    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const targetDateStr = dateParam || (() => {
+      const y = targetDate.getFullYear();
+      const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const d = String(targetDate.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    })();
     const weekday = getWeekday(targetDate);
 
     const { data: classes, error: classesError } = await supabaseAdmin

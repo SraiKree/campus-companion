@@ -114,11 +114,8 @@ export async function POST(request: NextRequest) {
     // Convert Sunday-based (0-6) to Monday-based (1-7) for easier calculation
     const currentWeekday = today.getDay() === 0 ? 7 : today.getDay();
     
-    // Calculate days until next occurrence of target weekday
-    let daysUntilTarget = targetWeekday - currentWeekday;
-    if (daysUntilTarget <= 0) {
-      daysUntilTarget += 7; // Move to next week if target day has passed or is today
-    }
+    // Calculate the date for the target weekday in the CURRENT week
+    const daysUntilTarget = targetWeekday - currentWeekday;
     
     const nextOccurrence = new Date(today);
     nextOccurrence.setDate(today.getDate() + daysUntilTarget);

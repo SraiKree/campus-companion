@@ -1,0 +1,393 @@
+/* =====================================================
+   Faculty Portal — page-level design tokens & primitives.
+   Scoped under .fac-design so it never leaks elsewhere.
+   ===================================================== */
+
+.fac-design {
+  --fd-brand-600: #1E9D6B;
+  --fd-brand-500: #29B47C;
+  --fd-brand-100: #DCF1E7;
+  --fd-brand-50:  #EAF7F0;
+
+  --fd-amber-600: #C97A1F;
+  --fd-amber-500: #DA8E2C;
+  --fd-amber-100: #FBE5C8;
+
+  --fd-red-600:   #C03A3F;
+  --fd-red-100:   #FBE2E2;
+
+  --fd-purple-600: #8B5BD0;
+  --fd-purple-100: #ECE3FB;
+
+  --fd-surface:   #FFFFFF;
+  --fd-surface-2: #FBF6F2;
+  --fd-line:      #EFE2DA;
+  --fd-line-2:    #F5EBE4;
+  --fd-text:      #1B1A18;
+  --fd-text-2:    #5C564F;
+  --fd-text-3:    #8C8580;
+
+  --fd-shadow-sm: 0 1px 2px rgba(20, 18, 14, 0.04), 0 1px 1px rgba(20, 18, 14, 0.03);
+  --fd-shadow-lg: 0 18px 40px rgba(20, 18, 14, 0.08), 0 4px 10px rgba(20, 18, 14, 0.04);
+
+  --fd-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  font-feature-settings: "ss01", "cv11";
+  letter-spacing: -0.005em;
+  color: var(--fd-text);
+}
+
+.dark .fac-design {
+  --fd-brand-100: #1E2E26;
+  --fd-brand-50:  #182520;
+  --fd-amber-100: #2E2418;
+  --fd-red-100:   #2E1A1D;
+  --fd-purple-100: #251C3A;
+
+  --fd-surface:   #18211C;
+  --fd-surface-2: #1F2924;
+  --fd-line:      #28332C;
+  --fd-line-2:    #222B26;
+  --fd-text:      #ECF3EE;
+  --fd-text-2:    #B6C2BB;
+  --fd-text-3:    #8A968F;
+}
+
+/* ---------- card ---------- */
+.fac-design .fac-card {
+  background: var(--fd-surface);
+  border: 1px solid var(--fd-line);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: var(--fd-shadow-sm);
+}
+.fac-design .fac-card-flush { padding: 0; overflow: hidden; }
+.fac-design .fac-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fd-text);
+}
+
+/* ---------- pills ---------- */
+.fac-design .fac-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.fac-design .fac-pill-cream  { background: #FBE5C8; color: #9C5E16; }
+.fac-design .fac-pill-green  { background: var(--fd-brand-100); color: var(--fd-brand-600); }
+.fac-design .fac-pill-red    { background: var(--fd-red-100); color: var(--fd-red-600); }
+.fac-design .fac-pill-amber  { background: var(--fd-amber-100); color: var(--fd-amber-600); }
+.fac-design .fac-pill-purple { background: var(--fd-purple-100); color: var(--fd-purple-600); }
+.fac-design .fac-pill-muted  {
+  background: var(--fd-surface-2);
+  color: var(--fd-text-2);
+  border: 1px solid var(--fd-line);
+}
+
+/* ---------- eyebrow / labels ---------- */
+.fac-design .fac-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fd-text-3);
+}
+
+/* ---------- buttons ---------- */
+.fac-design .fac-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 80ms, background 120ms, opacity 120ms;
+  color: var(--fd-text);
+}
+.fac-design .fac-btn:active { transform: translateY(1px); }
+.fac-design .fac-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.fac-design .fac-btn-primary {
+  background: var(--fd-brand-600);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(30, 157, 107, 0.25);
+}
+.fac-design .fac-btn-primary:hover { background: var(--fd-brand-500); }
+.fac-design .fac-btn-secondary {
+  background: var(--fd-surface);
+  color: var(--fd-text);
+  border-color: var(--fd-line);
+}
+.fac-design .fac-btn-secondary:hover { background: var(--fd-surface-2); }
+.fac-design .fac-btn-ghost { color: var(--fd-text-2); }
+.fac-design .fac-btn-ghost:hover { background: var(--fd-surface-2); }
+
+/* ---------- table ---------- */
+.fac-design .fac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.fac-design .fac-table thead th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fd-text-3);
+  font-weight: 700;
+  padding: 12px 16px;
+  background: var(--fd-surface-2);
+  border-bottom: 1px solid var(--fd-line);
+}
+.fac-design .fac-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--fd-line-2);
+  color: var(--fd-text);
+}
+.fac-design .fac-table tbody tr:last-child td { border-bottom: 0; }
+.fac-design .fac-table tbody tr:hover { background: var(--fd-surface-2); }
+
+/* ---------- numeric mark input ---------- */
+.fac-design .fac-mark-input {
+  width: 56px;
+  padding: 6px 8px;
+  font-family: var(--fd-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fd-text);
+  background: var(--fd-surface);
+  border: 1px solid var(--fd-line);
+  border-radius: 8px;
+  text-align: center;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms, background 120ms;
+}
+.fac-design .fac-mark-input:hover { border-color: var(--fd-text-3); }
+.fac-design .fac-mark-input:focus {
+  border-color: var(--fd-brand-600);
+  box-shadow: 0 0 0 3px rgba(30, 157, 107, 0.18);
+}
+.fac-design .fac-mark-input.is-empty {
+  color: var(--fd-text-3);
+  background: var(--fd-surface-2);
+}
+.fac-design .fac-mark-input.is-invalid {
+  border-color: var(--fd-red-600);
+  background: var(--fd-red-100);
+  color: var(--fd-red-600);
+}
+.fac-design .fac-mark-input::-webkit-outer-spin-button,
+.fac-design .fac-mark-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.fac-design .fac-mark-input { -moz-appearance: textfield; }
+
+/* ---------- form input ---------- */
+.fac-design .fac-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--fd-text);
+  background: var(--fd-surface);
+  border: 1px solid var(--fd-line);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.fac-design .fac-input:focus {
+  border-color: var(--fd-brand-600);
+  box-shadow: 0 0 0 3px rgba(30, 157, 107, 0.18);
+}
+
+/* ---------- read-only mark + grade chip ---------- */
+.fac-design .fac-mark-readonly {
+  display: inline-block;
+  min-width: 40px;
+  font-family: var(--fd-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fd-text-2);
+  text-align: center;
+}
+.fac-design .fac-grade-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-family: var(--fd-mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- progress bar ---------- */
+.fac-design .fac-bar {
+  height: 8px;
+  background: var(--fd-line-2);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.fac-design .fac-bar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+
+/* ---------- subject / class chip selector ---------- */
+.fac-design .fac-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--fd-surface);
+  border: 1px solid var(--fd-line);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 200px;
+  color: var(--fd-text);
+  transition: box-shadow 120ms, border-color 120ms;
+}
+.fac-design .fac-chip:hover { border-color: var(--fd-brand-500); }
+.fac-design .fac-chip.active {
+  border-color: var(--fd-brand-600);
+  box-shadow: 0 4px 12px rgba(30, 157, 107, 0.18);
+}
+.fac-design .fac-chip-code {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--fd-text-3);
+}
+.fac-design .fac-chip.active .fac-chip-code { color: var(--fd-brand-600); }
+.fac-design .fac-chip-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.fac-design .fac-chip-meta {
+  font-size: 11px;
+  color: var(--fd-text-3);
+  margin-top: 2px;
+}
+
+/* ---------- segmented control (radio-style) ---------- */
+.fac-design .fac-seg {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--fd-surface-2);
+  border: 1px solid var(--fd-line);
+  border-radius: 999px;
+}
+.fac-design .fac-seg-btn {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--fd-text-2);
+  font-weight: 500;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fac-design .fac-seg-btn.active {
+  background: var(--fd-brand-600);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---------- present/absent toggle ---------- */
+.fac-design .fac-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fac-design .fac-toggle-track {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 140ms, border-color 140ms;
+}
+.fac-design .fac-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: left 160ms ease;
+}
+.fac-design .fac-toggle-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  min-width: 54px;
+  text-align: left;
+}
+
+/* ---------- avatar bubble (initials) ---------- */
+.fac-design .fac-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--fd-brand-100);
+  color: var(--fd-brand-600);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ---------- modal/drawer scrim ---------- */
+.fac-design-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.45);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+.fac-design-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.5);
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
