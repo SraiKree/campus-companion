@@ -344,7 +344,7 @@ export default function StudentSportsPage() {
               <div className="flex items-center gap-3">
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
-                  style={{ backgroundColor: '#e05252' }}
+                  style={{ backgroundColor: 'var(--ch-accent)' }}
                 >
                   <Trophy className="w-6 h-6 text-white" />
                 </div>
@@ -749,7 +749,7 @@ export default function StudentSportsPage() {
                       className="grid grid-cols-12 px-5 py-4 items-center border-b last:border-b-0 transition-colors"
                       style={{
                         borderColor: 'var(--ch-border)',
-                        backgroundColor: isMe ? 'rgba(224,82,82,0.08)' : 'transparent',
+                        backgroundColor: isMe ? 'rgba(var(--ch-accent-rgb),0.08)' : 'transparent',
                       }}
                     >
                       <div className="col-span-1">
@@ -767,9 +767,9 @@ export default function StudentSportsPage() {
                             <Badge
                               className="text-[10px] border"
                               style={{
-                                backgroundColor: 'rgba(224,82,82,0.1)',
-                                color: '#e05252',
-                                borderColor: 'rgba(224,82,82,0.3)',
+                                backgroundColor: 'rgba(var(--ch-accent-rgb),0.1)',
+                                color: 'var(--ch-accent)',
+                                borderColor: 'rgba(var(--ch-accent-rgb),0.3)',
                               }}
                             >
                               You
@@ -787,7 +787,7 @@ export default function StudentSportsPage() {
                       <div className="col-span-1 text-center text-sm" style={{ color: 'var(--ch-muted)' }}>
                         {entry.achievements}
                       </div>
-                      <div className="col-span-2 text-right text-lg font-bold" style={{ color: '#e05252' }}>
+                      <div className="col-span-2 text-right text-lg font-bold" style={{ color: 'var(--ch-accent)' }}>
                         {entry.points}
                       </div>
                     </div>
@@ -1330,9 +1330,9 @@ function CourtBookingDialog({
                       onClick={() => setSelectedSlot(s)}
                       className="rounded-lg border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through"
                       style={{
-                        backgroundColor: isSelected ? '#e05252' : isBusy ? 'rgba(239,68,68,0.08)' : 'var(--ch-bg)',
+                        backgroundColor: isSelected ? 'var(--ch-accent)' : isBusy ? 'rgba(239,68,68,0.08)' : 'var(--ch-bg)',
                         color: isSelected ? '#fff' : 'var(--ch-text)',
-                        borderColor: isSelected ? '#e05252' : 'var(--ch-border)',
+                        borderColor: isSelected ? 'var(--ch-accent)' : 'var(--ch-border)',
                       }}
                     >
                       {formatSlotLabel(s.start)} – {formatSlotLabel(s.end)}

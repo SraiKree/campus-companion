@@ -18,6 +18,7 @@ import WorkspaceSwitcher from '@/components/workspace/WorkspaceSwitcher';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import NotificationPanel from '@/components/NotificationPanel';
+import AccentPicker from '@/components/AccentPicker';
 
 interface FacultyLayoutProps {
   children: ReactNode;
@@ -103,20 +104,16 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
 
   const isEducation = workspace === 'education';
 
-  // ── Workspace-aware colour tokens ──────────────────────────────────
-  const wsAccent = isEducation ? '#059669' : (isDark ? '#ff8d89' : '#e05252');
-  const wsSidebarBg = isEducation
-    ? (isDark ? '#0f1a16' : '#eef6f2')
-    : 'var(--ch-sidebar)';
-  const wsBorderColor = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.15)' : 'rgba(5,150,105,0.18)')
-    : 'var(--ch-border)';
-  const wsNavActive = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.10)')
-    : 'var(--ch-nav-active)';
-  const wsHover = isEducation
-    ? (isDark ? 'rgba(5,150,105,0.06)' : 'rgba(5,150,105,0.06)')
-    : 'var(--ch-hover)';
+  // ── Theme tokens ───────────────────────────────────────────────────
+  // Workspaces are kept as a navigation grouping but share one accent so
+  // the AccentPicker controls every surface. Use --ch-accent across both
+  // education and admin workspaces; the chip in the header is the only
+  // visual distinguisher between modes.
+  const wsAccent = 'var(--ch-accent)';
+  const wsSidebarBg = 'var(--ch-sidebar)';
+  const wsBorderColor = 'var(--ch-border)';
+  const wsNavActive = 'var(--ch-nav-active)';
+  const wsHover = 'var(--ch-hover)';
 
   return (
     <div
@@ -130,7 +127,6 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
         style={{
           backgroundColor: wsSidebarBg,
           borderRight: `1px solid ${wsBorderColor}`,
-          borderLeft: `3px solid ${wsAccent}`,
           transform: dragOffset ? `translateX(${dragOffset * 0.15}px)` : undefined,
           transition: dragOffset ? 'none' : 'transform 0.3s ease-out, background-color 0.35s ease, border-color 0.35s ease',
           touchAction: 'pan-y',
@@ -207,13 +203,19 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
         </nav>
 
         {/* Swipe hint */}
-        <div
-          className="text-center py-2"
-          style={{ opacity: 0.4 }}
-        >
-          <p className="text-[10px] font-medium" style={{ color: 'var(--ch-muted)' }}>
-            Swipe sidebar or press Ctrl+Shift+Arrow
-          </p>
+        <div className="flex justify-center py-2">
+          <div
+            className="inline-flex items-center rounded-full border px-3 py-1.5 backdrop-blur-sm"
+            style={{
+              backgroundColor: 'var(--ch-card)',
+              borderColor: 'var(--ch-border)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+            }}
+          >
+            <p className="text-[10px] font-semibold tracking-wide" style={{ color: 'var(--ch-text)' }}>
+              Swipe sidebar or press Ctrl+Shift+Arrow
+            </p>
+          </div>
         </div>
 
         {/* User Profile */}
@@ -293,11 +295,9 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
                 style={{
-                  backgroundColor: isEducation
-                    ? 'rgba(5,150,105,0.08)'
-                    : 'rgba(224,82,82,0.08)',
-                  color: isEducation ? '#059669' : '#e05252',
-                  border: `1px solid ${isEducation ? 'rgba(5,150,105,0.2)' : 'rgba(224,82,82,0.2)'}`,
+                  backgroundColor: 'var(--ch-accent-soft)',
+                  color: 'var(--ch-accent)',
+                  border: '1px solid rgba(var(--ch-accent-rgb),0.2)',
                 }}
               >
                 {isEducation ? 'Learning Mode' : 'Admin Mode'}
@@ -313,12 +313,14 @@ const FacultyLayout = ({ children }: FacultyLayoutProps) => {
                 style={{
                   backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
                   borderColor: 'var(--ch-border)',
-                  color: isDark ? '#ff8d89' : '#e05252',
+                  color: 'var(--ch-accent)',
                 }}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+
+              <AccentPicker />
 
               <Button
                 variant="ghost"

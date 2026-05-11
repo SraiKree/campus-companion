@@ -226,7 +226,7 @@ export default function NotificationsPage() {
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded-full" style={{
-                        backgroundColor: 'rgba(224,82,82,0.1)', color: 'var(--ch-accent)',
+                        backgroundColor: 'var(--ch-accent-soft)', color: 'var(--ch-accent)',
                       }}>
                         {TYPES.find(t => t.value === n.type)?.label || n.type}
                       </span>
