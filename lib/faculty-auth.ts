@@ -28,10 +28,11 @@ export async function authenticateFaculty(request: NextRequest): Promise<Authent
   if (error || !user) throw { status: 401, message: 'Unauthorized' };
 
   const roleFromMetadata = (user.user_metadata as any)?.role;
-  const { data: roleData } = await authClient
-    .from('user_roles').select('role').eq('user_id', user.id).single();
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'faculty') throw { status: 403, message: 'Forbidden' };
+  const { data: roleRows } = await authClient
+    .from('user_roles').select('role').eq('user_id', user.id);
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
+  if (!roles.includes('faculty')) throw { status: 403, message: 'Forbidden' };
 
   const { data: profile } = await supabaseAdmin
     .from('profiles').select('id, name, department, designation').eq('id', user.id).single();

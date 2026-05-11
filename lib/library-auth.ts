@@ -20,11 +20,11 @@ export async function authenticateLibrary(request: NextRequest): Promise<Authent
   if (error || !user) throw { status: 401, message: 'Unauthorized' };
 
   const roleFromMetadata = (user.user_metadata as Record<string, unknown> | undefined)?.role;
-  const { data: roleData } = await authClient
-    .from('user_roles').select('role').eq('user_id', user.id).single();
-
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'library') throw { status: 403, message: 'Forbidden' };
+  const { data: roleRows } = await authClient
+    .from('user_roles').select('role').eq('user_id', user.id);
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
+  if (!roles.includes('library')) throw { status: 403, message: 'Forbidden' };
 
   return { user: { id: user.id, email: user.email ?? null } };
 }

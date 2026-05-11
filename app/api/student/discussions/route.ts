@@ -96,11 +96,11 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .maybeSingle();
 
-    const { data: roleRow } = await supabase
+    const { data: roleRows } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('user_id', user.id);
+    const roleRow = roleRows?.find((r: any) => String(r?.role ?? '').toLowerCase() === 'student') ?? roleRows?.[0] ?? null;
 
     const { data: student } = await supabase
       .from('students25')

@@ -31,14 +31,14 @@ export async function GET(request: NextRequest) {
   }
 
   const roleFromMetadata = (user.user_metadata as Record<string, unknown>)?.role;
-  const { data: roleData } = await supabase
+  const { data: roleRows } = await supabase
     .from('user_roles')
     .select('role')
-    .eq('user_id', user.id)
-    .single();
+    .eq('user_id', user.id);
 
-  const role = (roleData?.role || roleFromMetadata || '').toString().toLowerCase();
-  if (role !== 'student') {
+  const roles = (roleRows ?? []).map((r: any) => String(r?.role ?? '').toLowerCase());
+  if (roleFromMetadata) roles.push(String(roleFromMetadata).toLowerCase());
+  if (!roles.includes('student')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

@@ -195,14 +195,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (typeof roleFromMetadata === 'string' && isValidRole(roleFromMetadata)) {
           role = roleFromMetadata;
         } else {
-          const { data: roleData } = await supabase
+          const { data: roleRows } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', authUser.id)
-            .single();
+            .eq('user_id', authUser.id);
 
-          if (roleData?.role && isValidRole(roleData.role)) {
-            role = roleData.role;
+          const firstValid = (roleRows ?? []).find((r) => r?.role && isValidRole(r.role));
+          if (firstValid?.role) {
+            role = firstValid.role as UserRole;
           }
         }
       }
@@ -236,22 +236,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // page so we don't need to seed per-role users while iterating.
     const isDevMaster = (authUser.email || email).toLowerCase() === 'keertan.k@gmail.com';
 
-    let actualRole: UserRole | null = null;
+    const userRoles = new Set<UserRole>();
     const metaRole = (authUser.user_metadata as Record<string, unknown> | undefined)?.role;
     if (typeof metaRole === 'string' && isValidRole(metaRole)) {
-      actualRole = metaRole;
-    } else {
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authUser.id)
-        .single();
-      if (roleData?.role && isValidRole(roleData.role)) {
-        actualRole = roleData.role;
-      }
+      userRoles.add(metaRole);
+    }
+    const { data: roleRows } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authUser.id);
+    for (const row of roleRows ?? []) {
+      if (row?.role && isValidRole(row.role)) userRoles.add(row.role);
     }
 
-    if (!isDevMaster && actualRole !== expectedRole) {
+    if (!isDevMaster && !userRoles.has(expectedRole)) {
       await supabase.auth.signOut();
       clearUserData();
       return {
@@ -264,7 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: authUser.id,
       email: authUser.email || email,
       name: authUser.email || email,
-      role: isDevMaster ? expectedRole : (actualRole as UserRole),
+      role: expectedRole,
     };
     storeUserData(userData);
     return { success: true };
