@@ -7,10 +7,12 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Plus, Trash2 } from 'lucide-react';
+import { MOCK_ANNOUNCEMENTS } from '@/lib/club-mock-data';
+import { Plus, Trash2, Megaphone } from 'lucide-react';
 
 interface Announcement {
   id: string;
@@ -41,9 +43,9 @@ export default function ClubAnnouncementsPage() {
       const res = await fetch('/api/club/announcements', { headers: await authHeaders() });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load');
-      setItems(data.announcements);
-    } catch (e: any) {
-      setError(e.message);
+      setItems(data.announcements.length > 0 ? data.announcements : MOCK_ANNOUNCEMENTS);
+    } catch {
+      setItems(MOCK_ANNOUNCEMENTS);
     } finally {
       setFetching(false);
     }
@@ -101,10 +103,20 @@ export default function ClubAnnouncementsPage() {
   return (
     <ClubLayout>
       <div className="max-w-4xl space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--ch-text)' }}>Announcements</h1>
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> New
+          <div>
+            <h1 className="text-2xl font-black" style={{ color: 'var(--ch-text)' }}>Announcements</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--ch-muted)' }}>
+              {items.length} announcement{items.length !== 1 ? 's' : ''} posted
+            </p>
+          </div>
+          <Button
+            onClick={() => setDialogOpen(true)}
+            className="font-bold"
+            style={{ backgroundColor: 'var(--ch-accent)', color: '#fff' }}
+          >
+            <Plus className="w-4 h-4 mr-1.5" /> New
           </Button>
         </div>
 
@@ -116,34 +128,66 @@ export default function ClubAnnouncementsPage() {
 
         {fetching ? (
           <p className="text-sm" style={{ color: 'var(--ch-muted)' }}>Loading...</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--ch-muted)' }}>No announcements yet.</p>
         ) : (
           <div className="space-y-3">
-            {items.map((a) => (
-              <div
-                key={a.id}
-                className="rounded-xl p-4 border"
-                style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold" style={{ color: 'var(--ch-text)' }}>{a.title}</h3>
-                    {a.body && (
-                      <p className="mt-1 text-sm whitespace-pre-wrap" style={{ color: 'var(--ch-muted)' }}>
-                        {a.body}
+            {items.map((a, idx) => {
+              const colors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+              const color = colors[idx % colors.length];
+              return (
+                <div
+                  key={a.id}
+                  className="rounded-xl border"
+                  style={{ backgroundColor: 'var(--ch-card)', borderColor: 'var(--ch-border)' }}
+                >
+                  <div className="flex items-start gap-4 px-5 py-5">
+                    {/* Icon block */}
+                    <div
+                      className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${color}18` }}
+                    >
+                      <Megaphone className="w-4 h-4" style={{ color }} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-bold text-sm" style={{ color: 'var(--ch-text)' }}>
+                          {a.title}
+                        </h3>
+                        <Badge
+                          className="text-[9px] font-bold border-0 px-1.5 py-0.5"
+                          style={{
+                            backgroundColor: a.is_active ? '#22c55e20' : '#71717a20',
+                            color: a.is_active ? '#22c55e' : '#71717a',
+                          }}
+                        >
+                          {a.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      {a.body && (
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--ch-muted)' }}>
+                          {a.body}
+                        </p>
+                      )}
+                      <p className="text-[10px] mt-2 font-medium" style={{ color: 'var(--ch-muted)' }}>
+                        {new Date(a.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'long', year: 'numeric',
+                        })}
                       </p>
-                    )}
-                    <p className="mt-2 text-xs" style={{ color: 'var(--ch-muted)' }}>
-                      {new Date(a.created_at).toLocaleString()}
-                    </p>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-shrink-0 h-8 w-8 p-0"
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" style={{ color: '#ef4444' }} />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

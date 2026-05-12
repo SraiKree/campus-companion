@@ -117,7 +117,7 @@ export default function ComplaintsTab({ complaints, onResolve }: ComplaintsTabPr
                       {c.title}
                     </td>
                     <td className="p-4" style={{ color: 'var(--ch-text)' }}>
-                      <p className="font-medium">{c.student_name}</p>
+                      <p className="font-heading font-semibold text-base">{c.student_name}</p>
                       <p className="text-xs" style={{ color: 'var(--ch-muted)' }}>{c.student_roll}</p>
                     </td>
                     <td className="p-4" style={{ color: 'var(--ch-text)' }}>

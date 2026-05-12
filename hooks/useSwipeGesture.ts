@@ -39,7 +39,8 @@ export function useSwipeGesture(options: SwipeGestureOptions = {}) {
     locked.current = null;
     // NOTE: We intentionally do NOT call setPointerCapture here.
     // Capturing the pointer would steal all events from child elements
-    // (links, buttons), making them unclickable.
+    // (links, buttons), making them unclickable. We capture later, only
+    // once a horizontal swipe is locked in (see onPointerMove).
   }, []);
 
   const onPointerMove = useCallback((e: ReactPointerEvent) => {
@@ -53,6 +54,18 @@ export function useSwipeGesture(options: SwipeGestureOptions = {}) {
     // Lock direction after 10px of movement
     if (!locked.current && (absDx > 10 || absDy > 10)) {
       locked.current = absDx >= absDy ? 'horizontal' : 'vertical';
+
+      // Once locked horizontal, capture the pointer so subsequent
+      // move/up events keep firing on this element even if the cursor
+      // (or finger) drifts off the sidebar — e.g. on a left swipe that
+      // pushes past the viewport edge. Auto-released on pointerup.
+      if (locked.current === 'horizontal') {
+        try {
+          (e.currentTarget as Element).setPointerCapture(e.pointerId);
+        } catch {
+          // ignore — some environments throw if the element isn't ready
+        }
+      }
     }
 
     // If locked to vertical, bail

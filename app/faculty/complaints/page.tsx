@@ -408,7 +408,7 @@ export default function FacultyComplaintsPage() {
                               size="sm"
                               onClick={() => handleRevealIdentity(complaint.id)}
                               className="gap-1.5 text-xs h-7 px-2"
-                              style={{ color: isRevealed ? '#e05252' : 'var(--ch-muted)' }}
+                              style={{ color: isRevealed ? 'var(--ch-accent)' : 'var(--ch-muted)' }}
                             >
                               {isRevealed ? (
                                 <><EyeOff className="w-3.5 h-3.5" /> Hide Identity</>

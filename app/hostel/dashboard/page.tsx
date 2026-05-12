@@ -30,6 +30,7 @@ import StatsRow from '@/components/hostel-admin/StatsRow';
 import StudentsTab from '@/components/hostel-admin/StudentsTab';
 import RoomsTab from '@/components/hostel-admin/RoomsTab';
 import ComplaintsTab from '@/components/hostel-admin/ComplaintsTab';
+import AccentPicker from '@/components/AccentPicker';
 
 type Tab = 'students' | 'rooms' | 'complaints';
 
@@ -196,18 +197,22 @@ export default function HostelAdminDashboardPage() {
             <h2 className="text-lg font-bold capitalize" style={{ color: 'var(--ch-text)' }}>
               {tab}
             </h2>
-            <button
-              onClick={toggleTheme}
-              className="no-transition w-10 h-10 rounded-full flex items-center justify-center border"
-              style={{
-                backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
-                borderColor: 'var(--ch-border)',
-                color: isDark ? '#ff8d89' : '#e05252',
-              }}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleTheme}
+                className="no-transition w-10 h-10 rounded-full flex items-center justify-center border"
+                style={{
+                  backgroundColor: isDark ? 'var(--ch-nav-active)' : 'var(--ch-card)',
+                  borderColor: 'var(--ch-border)',
+                  color: isDark ? 'var(--ch-accent)' : 'var(--ch-accent)',
+                }}
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <AccentPicker />
+            </div>
           </div>
         </header>
 

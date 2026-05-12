@@ -18,6 +18,7 @@ import {
   Sun,
   type LucideIcon,
 } from 'lucide-react';
+import AccentPicker from '@/components/AccentPicker';
 
 interface RoleLoginProps {
   role: UserRole;
@@ -68,18 +69,21 @@ export default function RoleLogin({ role, title, subtitle, icon: Icon }: RoleLog
       className={`ch-themed min-h-screen flex flex-col items-center justify-center p-4 relative${isDark ? ' dark' : ''}`}
       style={{ backgroundColor: 'var(--ch-bg)' }}
     >
-      <button
-        onClick={toggleTheme}
-        className="no-transition absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
-        style={{
-          backgroundColor: 'var(--ch-card)',
-          borderColor: 'var(--ch-border)',
-          color: isDark ? '#ff8d89' : '#e05252',
-        }}
-        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-      </button>
+      <div className="absolute top-6 right-6 flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className="no-transition w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
+          style={{
+            backgroundColor: 'var(--ch-card)',
+            borderColor: 'var(--ch-border)',
+            color: 'var(--ch-accent)',
+          }}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+        <AccentPicker />
+      </div>
 
       <div className="w-full max-w-[420px] animate-fade-in">
         <div className="text-center mb-8">
@@ -105,7 +109,7 @@ export default function RoleLogin({ role, title, subtitle, icon: Icon }: RoleLog
             {error && (
               <div
                 className="flex items-start gap-2.5 text-sm p-3.5 rounded-xl"
-                style={{ backgroundColor: 'rgba(224,82,82,0.08)', color: 'var(--ch-accent)' }}
+                style={{ backgroundColor: 'var(--ch-accent-soft)', color: 'var(--ch-accent)' }}
               >
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
