@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, BookOpen, Calendar, Users, Sun, Moon, MessageSquarePlus, Building2,
-  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library, Mail, Bus, Briefcase,
+  Send, MessageSquare, Wallet, Award, CalendarDays, Trophy, Library, Bus, Briefcase,
   FileSignature, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,9 +44,8 @@ const adminNav = [
   { href: '/student/fees', label: 'Fee Payment', icon: Wallet },
   { href: '/student/admin-accounts', label: 'Admin & Accounts', icon: Briefcase },
   { href: '/student/certificates', label: 'Certificates', icon: Award },
-  { href: '/student/leave-request', label: 'Leave Request', icon: Mail },
   { href: '/student/complaints', label: 'Complaints', icon: MessageSquarePlus },
-  { href: '/student/requests', label: 'Raise Request', icon: Send },
+  { href: '/student/requests', label: 'Requests', icon: Send },
   { href: '/student/feedback', label: 'Faculty Feedback', icon: MessageSquare },
 ];
 

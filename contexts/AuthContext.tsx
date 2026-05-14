@@ -45,27 +45,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const resolveRoleFromSession = useCallback(async (sessionUser: { id: string; user_metadata?: Record<string, unknown> | null }): Promise<UserRole | null> => {
+    const metaRole = (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role;
+    if (typeof metaRole === 'string' && isValidRole(metaRole)) {
+      return metaRole;
+    }
+    const { data: roleRows } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', sessionUser.id);
+    const firstValid = (roleRows ?? []).find((r) => r?.role && isValidRole(r.role));
+    if (firstValid?.role) {
+      return firstValid.role as UserRole;
+    }
+    return null;
+  }, []);
+
+  const hydrateUserFromSession = useCallback(async (sessionUser: { id: string; email?: string | null; user_metadata?: Record<string, unknown> | null }) => {
+    const storedUser = getUserFromStorage();
+    if (storedUser && storedUser.id === sessionUser.id && storedUser.name && storedUser.name !== storedUser.email) {
+      setUser(storedUser);
+      return;
+    }
+    const role = await resolveRoleFromSession(sessionUser);
+    if (!role) {
+      // Cannot determine role — don't guess (previously defaulted to 'faculty' which sent students to /faculty).
+      // Leave user state empty; the active login flow's storeUserData call will populate it from the login API response.
+      return;
+    }
+
+    const meta = (sessionUser.user_metadata ?? {}) as Record<string, unknown>;
+    const metaStr = (key: string) => (typeof meta[key] === 'string' ? (meta[key] as string) : undefined);
+    const nameFromMeta = metaStr('name');
+
+    // For students, fetch the full profile (department, section, semester, year, hostel info)
+    // from students25 via GET /api/auth/login — user_metadata only carries name + roll_no.
+    if (role === 'student' && sessionUser.email) {
+      try {
+        const res = await fetch(`/api/auth/login?email=${encodeURIComponent(sessionUser.email)}`);
+        if (res.ok) {
+          const { user: studentProfile } = await res.json();
+          if (studentProfile?.name) {
+            storeUserData({ ...studentProfile, id: sessionUser.id });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to hydrate student profile:', err);
+      }
+    }
+
+    const hydrated: AppUser = {
+      id: sessionUser.id,
+      email: sessionUser.email || '',
+      name: nameFromMeta || sessionUser.email || '',
+      role,
+      roll_no: metaStr('roll_no'),
+      department: metaStr('department'),
+      section: metaStr('section'),
+      semester: metaStr('semester'),
+      year: metaStr('year'),
+    };
+    storeUserData(hydrated);
+  }, [resolveRoleFromSession]);
+
   useEffect(() => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Check if we have user data in storage first
-        const storedUser = getUserFromStorage();
-        if (storedUser && storedUser.id === session.user.id) {
-          setUser(storedUser);
-          setLoading(false);
-          return;
-        }
-
-        // If no stored data, we need to fetch from login API response
-        // For now, create a basic user object from session
-        const basicUser: AppUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.email || '',
-          role: 'faculty' as UserRole, // Default, will be updated by login API
-        };
-        storeUserData(basicUser);
+        await hydrateUserFromSession(session.user);
       } else {
         clearUserData();
       }
@@ -73,21 +121,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const storedUser = getUserFromStorage();
-        if (storedUser && storedUser.id === session.user.id) {
-          setUser(storedUser);
-        } else {
-          // Create basic user from session
-          const basicUser: AppUser = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.email || '',
-            role: 'faculty' as UserRole,
-          };
-          storeUserData(basicUser);
-        }
+        await hydrateUserFromSession(session.user);
       } else {
         clearUserData();
       }

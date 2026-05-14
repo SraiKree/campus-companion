@@ -36,25 +36,37 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
-    const targetDate = dateParam ? new Date(dateParam + 'T00:00:00') : new Date();
-    const targetDateStr = targetDate.toISOString().split('T')[0];
+    // Use the raw YYYY-MM-DD string directly. Round-tripping through `new Date(...).toISOString()`
+    // would shift the date by the server's UTC offset (e.g. IST → previous day), which silently
+    // broke the start_date filter and the weekday calculation for non-UTC clients.
+    const todayStr = (() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    })();
+    const targetDateStr = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayStr;
+    const [ty, tm, td] = targetDateStr.split('-').map(Number);
+    // Construct as local-midnight so getDay() returns the weekday for the wall-clock date.
+    const targetDate = new Date(ty, tm - 1, td);
     const weekday = getWeekday(targetDate);
 
-    const { data: profile, error: profileError } = await supabaseAdmin
+    // Look up the student first by profile.roll_no, then fall back to email
+    // (the profile row may exist without roll_no populated yet for older accounts).
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('roll_no')
+      .select('roll_no, email')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile?.roll_no) {
-      return NextResponse.json({ error: 'Student profile not found' }, { status: 404 });
-    }
-
-    const { data: student, error: studentError } = await supabaseAdmin
+    const studentQuery = supabaseAdmin
       .from('students25')
-      .select('department, section, semester, year, name')
-      .eq('roll_number', profile.roll_no.trim())
-      .single();
+      .select('department, section, semester, year, name');
+
+    const { data: student, error: studentError } = profile?.roll_no
+      ? await studentQuery.eq('roll_number', profile.roll_no.trim()).single()
+      : await studentQuery.ilike('email', (profile?.email || user.email || '').trim()).single();
 
     if (studentError || !student) {
       return NextResponse.json({ error: 'Student details not found' }, { status: 404 });
@@ -72,13 +84,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch classes' }, { status: 500 });
     }
 
-    const current = new Date(targetDateStr);
+    // Compare dates as plain YYYY-MM-DD strings to avoid any timezone drift.
     const activeClasses = (allClasses || []).filter((c: any) => {
-      const startDate = new Date(c.start_date);
-      if (current < startDate) return false;
+      const startDateStr: string = typeof c.start_date === 'string'
+        ? c.start_date.slice(0, 10)
+        : new Date(c.start_date).toISOString().slice(0, 10);
+      if (targetDateStr < startDateStr) return false;
 
       if (c.is_recurring) {
-        const weeksDiff = Math.floor((current.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const daysDiff = Math.floor(
+          (targetDate.getTime() - new Date(startDateStr + 'T00:00:00').getTime()) / (24 * 60 * 60 * 1000)
+        );
+        const weeksDiff = Math.floor(daysDiff / 7);
         return weeksDiff >= 0 && weeksDiff < 8;
       }
       return true;

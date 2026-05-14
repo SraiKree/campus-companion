@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Search, Home, Calendar, Clock, CalendarDays,
-  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, MessageSquare, Trophy, Library, Mail, Briefcase,
+  BookOpen, FileText, Megaphone, Sun, Moon, UserCircle, Trophy, Library, Mail, Briefcase,
   Wallet, Award, FlaskConical, FileSignature, TestTube2, ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,7 +45,6 @@ const adminNav = [
   { href: '/faculty/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/faculty/leave-requests', label: 'Leave Requests', icon: Mail },
   { href: '/faculty/sports', label: 'Sports & Activities', icon: Trophy },
-  { href: '/faculty/complaints', label: 'Complaints', icon: MessageSquare },
   { href: '/faculty/payroll', label: 'Payroll', icon: Wallet },
   { href: '/faculty/incentive', label: 'Incentives', icon: Award },
   { href: '/faculty/events-attended', label: 'Events Attended', icon: CalendarDays },
