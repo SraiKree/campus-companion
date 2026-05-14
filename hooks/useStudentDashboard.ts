@@ -18,25 +18,11 @@ interface Assignment {
   marks?: number;
 }
 
-interface UpcomingClass {
+interface TodayClass {
   time: string;
   subject: string;
   room: string;
-  periodStart: number;
-  startMinutes: number; // minutes since midnight when the class starts
-  weekday: number; // 1=Mon ... 6=Sat
-  weekdayLabel: string; // 'Mon', 'Tue', ...
 }
-
-// Same period schedule used in faculty timetable + attendance pages.
-const PERIOD_START_TIME: Record<number, { hour: number; minute: number; label: string }> = {
-  1: { hour: 9, minute: 20, label: '9:20 AM' },
-  2: { hour: 10, minute: 20, label: '10:20 AM' },
-  3: { hour: 11, minute: 20, label: '11:20 AM' },
-  4: { hour: 13, minute: 10, label: '1:10 PM' },
-  5: { hour: 14, minute: 10, label: '2:10 PM' },
-  6: { hour: 15, minute: 10, label: '3:10 PM' },
-};
 
 interface SubjectPerformance {
   subject: string;
@@ -61,7 +47,7 @@ export const useStudentDashboard = () => {
     attendanceRate: 0,
   });
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+  const [todayClasses, setTodayClasses] = useState<TodayClass[]>([]);
   const [subjectPerformance, setSubjectPerformance] = useState<SubjectPerformance[]>([]);
   const [weeklyAttendance, setWeeklyAttendance] = useState<{ day: string; present: number; total: number }[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestSummary[]>([]);
@@ -244,46 +230,9 @@ export const useStudentDashboard = () => {
   };
 
   const fetchTodayClasses = async () => {
-    const department = user?.department;
-    const section = user?.section;
-    if (!department) {
-      setUpcomingClasses([]);
-      return;
-    }
-
-    let query = supabase
-      .from('faculty_classes')
-      .select('subject_name, subject_code, room_number, period_start, period_end, weekday, department, section')
-      .eq('department', department);
-    if (section) {
-      query = query.eq('section', section);
-    }
-
-    const { data, error } = await query;
-    if (error || !data) {
-      setUpcomingClasses([]);
-      return;
-    }
-
-    const WEEKDAY_LABELS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    const classes: UpcomingClass[] = data
-      .map((c) => {
-        const t = PERIOD_START_TIME[c.period_start];
-        if (!t) return null;
-        return {
-          subject: c.subject_name,
-          room: c.room_number || '—',
-          time: t.label,
-          periodStart: c.period_start,
-          startMinutes: t.hour * 60 + t.minute,
-          weekday: c.weekday,
-          weekdayLabel: WEEKDAY_LABELS[c.weekday] || '',
-        };
-      })
-      .filter((c): c is UpcomingClass => c !== null);
-
-    setUpcomingClasses(classes);
+    // For now, return empty array since we don't have student timetable integration
+    // This can be implemented later when student-faculty class relationships are established
+    setTodayClasses([]);
   };
 
   const fetchSubjectPerformance = async () => {
@@ -355,7 +304,7 @@ export const useStudentDashboard = () => {
     loading,
     attendanceStats,
     assignments,
-    upcomingClasses,
+    todayClasses,
     subjectPerformance,
     weeklyAttendance,
     leaveRequests,

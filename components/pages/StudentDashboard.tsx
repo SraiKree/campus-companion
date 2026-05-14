@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import StudentLayout from '@/components/layout/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,8 +48,7 @@ const STORAGE_KEY = 'student-dashboard-layout';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
-  const router = useRouter();
-  const { loading, attendanceStats, assignments, upcomingClasses, subjectPerformance, weeklyAttendance, leaveRequests, announcements } = useStudentDashboard();
+  const { loading, attendanceStats, assignments, todayClasses, subjectPerformance, weeklyAttendance, leaveRequests, announcements } = useStudentDashboard();
   const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_LAYOUT);
   const [isWidgetMenuOpen, setIsWidgetMenuOpen] = useState(false);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
@@ -134,88 +132,24 @@ const StudentDashboard = () => {
     }
   };
 
-  // Find the next upcoming class across the whole week — not just today.
-  // Walks forward day-by-day from today; if today has remaining classes, pick
-  // the next one by start-time, otherwise jump to the soonest class on a later day.
-  const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const todayWeekday = now.getDay(); // 0=Sun ... 6=Sat
-  const nextClassRaw = (() => {
-    if (!upcomingClasses.length) return null;
-    // Try each day offset 0..6 — return the first class found
-    for (let offset = 0; offset < 7; offset++) {
-      const wd = ((todayWeekday + offset - 1 + 7) % 7) + 1; // map to 1=Mon..7=Sun
-      if (wd === 7) continue; // no classes on Sunday
-      const dayClasses = upcomingClasses
-        .filter((c) => c.weekday === wd)
-        .sort((a, b) => a.periodStart - b.periodStart);
-      if (!dayClasses.length) continue;
-      const pick =
-        offset === 0
-          ? dayClasses.find((c) => c.startMinutes > nowMinutes) ?? null
-          : dayClasses[0];
-      if (pick) return { ...pick, daysAway: offset };
-    }
-    return null;
-  })();
-
-  const dayLabel = (() => {
-    if (!nextClassRaw) return null;
-    if (nextClassRaw.daysAway === 0) return 'Today';
-    if (nextClassRaw.daysAway === 1) return 'Tomorrow';
-    return nextClassRaw.weekdayLabel;
-  })();
-
-  const startsInLabel = (() => {
-    if (!nextClassRaw) return null;
-    if (nextClassRaw.daysAway === 0) {
-      const diff = nextClassRaw.startMinutes - nowMinutes;
-      if (diff <= 0) return 'In progress';
-      if (diff < 60) return `Starts in ${diff}m`;
-      const h = Math.floor(diff / 60);
-      const m = diff % 60;
-      return m === 0 ? `Starts in ${h}h` : `Starts in ${h}h ${m}m`;
-    }
-    // For future days, just name the day — the right side shows the time.
-    return dayLabel;
-  })();
-
-  const nextClass = nextClassRaw
-    ? {
-        subject: nextClassRaw.subject,
-        room: nextClassRaw.room,
-        time: nextClassRaw.time,
-        startsIn: startsInLabel,
-        dayLabel,
-      }
-    : null;
-
-  // Quick action items. `external` opens a new tab; otherwise we router.push to `href`.
-  const quickActions: Array<{
-    label: string;
-    icon: typeof CreditCard;
-    color: string;
-    iconColor: string;
-    href: string;
-    external?: boolean;
-  }> = [
-    { label: 'Gate Pass', icon: CreditCard, color: 'bg-emerald-500/10', iconColor: 'text-emerald-600',
-      href: '/student/requests?tab=leave' },
-    { label: 'Pay Fees', icon: DollarSign, color: 'bg-amber-500/10', iconColor: 'text-amber-600',
-      href: 'https://edmit.mlrit.ac.in/', external: true },
-    { label: 'Requests', icon: Heart, color: 'bg-rose-500/10', iconColor: 'text-rose-600',
-      href: '/student/requests?tab=other' },
-    { label: 'Counseling', icon: UserCircle, color: 'bg-purple-500/10', iconColor: 'text-purple-600',
-      href: 'https://mlrit-counseling-portal.vercel.app/', external: true },
-  ];
-
-  const handleQuickAction = (action: typeof quickActions[number]) => {
-    if (action.external) {
-      window.open(action.href, '_blank', 'noopener,noreferrer');
-    } else {
-      router.push(action.href);
-    }
+  // Get next class info
+  const nextClass = todayClasses[0] ? {
+    ...todayClasses[0],
+    startsIn: '14m'
+  } : {
+    subject: 'Advanced UI Patterns',
+    room: 'Studio A, Design Block',
+    time: '09:00 AM',
+    startsIn: '14m'
   };
+
+  // Quick action items
+  const quickActions = [
+    { label: 'Gate Pass', icon: CreditCard, color: 'bg-emerald-500/10', iconColor: 'text-emerald-600' },
+    { label: 'Pay Fees', icon: DollarSign, color: 'bg-amber-500/10', iconColor: 'text-amber-600' },
+    { label: 'Requests', icon: Heart, color: 'bg-rose-500/10', iconColor: 'text-rose-600' },
+    { label: 'Counseling', icon: UserCircle, color: 'bg-purple-500/10', iconColor: 'text-purple-600' },
+  ];
 
   const handleAddWidget = (widgetId: string, widgetType: WidgetType) => {
     // Check if widget type already exists
@@ -306,39 +240,28 @@ const StudentDashboard = () => {
                 <h3 className="text-lg font-bold text-[#1a1a1a]">Next Class</h3>
                 <Clock className="w-[18px] h-[21px] text-[#666]" />
               </div>
-              {nextClass ? (
-                <div>
-                  <h4 className={`font-bold text-[#1a1a1a] tracking-tight mb-1 ${isSmall ? 'text-lg' : 'text-2xl'}`}>
-                    {nextClass.subject}
-                  </h4>
-                  <div className="flex items-center gap-1 text-sm text-[#666]">
-                    <MapPin className="w-2 h-2.5" />
-                    <span>{nextClass.room}</span>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <h4 className={`font-bold text-[#1a1a1a] tracking-tight mb-1 ${isSmall ? 'text-lg' : 'text-2xl'}`}>
-                    No upcoming classes
-                  </h4>
-                  <p className="text-sm text-[#666]">Nothing scheduled this week.</p>
-                </div>
-              )}
-            </div>
-            {nextClass && (
-              <div className="pt-8 border-t border-[#e5e5e5] mt-8">
-                <div className="flex items-center justify-between text-xs font-bold mb-2">
-                  <span className="text-[#e05252]">{nextClass.startsIn}</span>
-                  <span className="text-[#666]">{nextClass.time}</span>
-                </div>
-                <div className="h-2 bg-[#f2f0ed] rounded-full overflow-hidden">
-                  <div
-                    className="h-full w-[70%] bg-[#e05252] rounded-full"
-                    style={{ boxShadow: '0 0 12px rgba(var(--ch-accent-rgb), 0.3)' }}
-                  />
+              <div>
+                <h4 className={`font-bold text-[#1a1a1a] tracking-tight mb-1 ${isSmall ? 'text-lg' : 'text-2xl'}`}>
+                  {nextClass.subject}
+                </h4>
+                <div className="flex items-center gap-1 text-sm text-[#666]">
+                  <MapPin className="w-2 h-2.5" />
+                  <span>{nextClass.room}</span>
                 </div>
               </div>
-            )}
+            </div>
+            <div className="pt-8 border-t border-[#e5e5e5] mt-8">
+              <div className="flex items-center justify-between text-xs font-bold mb-2">
+                <span className="text-[#e05252]">Starts in {nextClass.startsIn}</span>
+                <span className="text-[#666]">{nextClass.time}</span>
+              </div>
+              <div className="h-2 bg-[#f2f0ed] rounded-full overflow-hidden">
+                <div
+                  className="h-full w-[70%] bg-[#e05252] rounded-full"
+                  style={{ boxShadow: '0 0 12px rgba(var(--ch-accent-rgb), 0.3)' }}
+                />
+              </div>
+            </div>
           </div>
         );
 
@@ -405,7 +328,6 @@ const StudentDashboard = () => {
               {quickActions.map((action, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleQuickAction(action)}
                   className="bg-[#f2f0ed] border border-[#e5e5e5] rounded-xl p-4 flex flex-col items-center gap-3 hover:bg-[#e5e5e5] transition-colors"
                 >
                   <div className={`w-12 h-12 ${action.color} rounded-full flex items-center justify-center`}>

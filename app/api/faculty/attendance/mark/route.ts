@@ -81,27 +81,12 @@ export async function POST(request: NextRequest) {
         subjectId = newSubject.id;
       }
 
-      // Find or create faculty entry — resolved from the authenticated profile,
-      // not a hardcoded fallback.
-      const { data: facultyProfile, error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .select('name, email, department')
-        .eq('id', facultyId)
-        .single();
-
-      if (profileError || !facultyProfile || !facultyProfile.email) {
-        console.error('Error fetching faculty profile:', profileError);
-        return NextResponse.json(
-          { error: 'Faculty profile not found' },
-          { status: 400 }
-        );
-      }
-
+      // Find or create faculty entry
       let facultyDbId;
       const { data: existingFaculty } = await supabaseAdmin
         .from('faculty')
         .select('id')
-        .eq('email', facultyProfile.email)
+        .eq('email', 'keertan.k@gmail.com') // Use the faculty email
         .single();
 
       if (existingFaculty) {
@@ -110,9 +95,9 @@ export async function POST(request: NextRequest) {
         const { data: newFaculty, error: facultyError } = await supabaseAdmin
           .from('faculty')
           .insert({
-            name: facultyProfile.name,
-            email: facultyProfile.email,
-            department: facultyProfile.department || facultyClass.department,
+            name: 'Keertan Kuppili',
+            email: 'keertan.k@gmail.com',
+            department: facultyClass.department
           })
           .select('id')
           .single();
